@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>VÁLVULA 77 — MOSH DE ARMA BRANCA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Black+Ops+One&family=JetBrains+Mono:wght@500;800&family=Permanent+Marker&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="noise-overlay"></div>
+  <div class="scanline-overlay"></div>
+
+  <!-- BOOT / AUDIO UNLOCK SCREEN -->
+  <section id="screen-boot" class="screen active">
+    <div class="boot-box">
+      <img src="assets/logo_trans.png" alt="Válvula 77 Logo" class="boot-logo" />
+      <h1 class="boot-title">VÁLVULA 77</h1>
+      <p class="boot-sub">MOSH DE ARMA BRANCA</p>
+      <button id="btn-boot-start" class="punk-btn mega-btn">
+        ⚡ LIGAR OS AMPS &amp; ENTRAR NO SHOW ⚡
+      </button>
+      <p class="boot-hint">VOLUME NO TALO • BLUMENAU / SC UNDERGROUND</p>
+    </div>
+  </section>
+
+  <!-- TELA INICIAL (TITLE SCREEN) -->
+  <section id="screen-title" class="screen">
+    <div class="title-bg-photo"></div>
+    <canvas id="menu-visualizer" width="1280" height="720"></canvas>
+
+    <!-- Cassette / Medley Audio Deck -->
+    <div class="audio-deck">
+      <div class="deck-status">
+        <span class="rec-dot"></span>
+        <span id="deck-track-name">SANTA CATAREICH — 800 MIL PRA COMPRAR FUZIL</span>
+      </div>
+      <div class="deck-controls">
+        <button id="btn-medley-prev" title="Faixa anterior">⏮</button>
+        <button id="btn-medley-next" title="Próximo trecho">⏭</button>
+        <button id="btn-medley-mute" title="Mutar/Desmutar">🔊</button>
+      </div>
+    </div>
+
+    <!-- Instagram Link -->
+    <a href="https://www.instagram.com/valvula77/" target="_blank" rel="noopener noreferrer" class="ig-badge">
+      <span class="ig-icon">📷</span> @VALVULA77
+    </a>
+
+    <div class="title-layout">
+      <!-- Top Hero: Logo + Game Title -->
+      <header class="title-hero">
+        <div class="logo-wrapper">
+          <img src="assets/logo_trans.png" alt="Logo Válvula 77" class="hero-logo" />
+        </div>
+        <div class="hero-text">
+          <div class="tag-pill">PUNK • METAL • RAP • SC UNDERGROUND</div>
+          <h1 class="game-title">VÁLVULA 77</h1>
+          <h2 class="game-subtitle">MOSH DE ARMA BRANCA</h2>
+          <div class="hero-actions">
+            <button id="btn-goto-select" class="punk-btn primary-btn">🤘 ENTRAR NO MOSH</button>
+            <button id="btn-goto-stages" class="punk-btn secondary-btn">🎸 SETLIST / FASES</button>
+            <button id="btn-show-controls" class="punk-btn ghost-btn">⌨️ CONTROLES</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Band Lineup Strip (Real Photos & Names) -->
+      <section class="band-lineup">
+        <div class="lineup-header">
+          <span class="lineup-label">NO PALCO HOJE — DERRUBE A RODA E A BANDA:</span>
+        </div>
+        <div class="band-cards">
+          <article class="band-card" data-member="psayco">
+            <div class="card-img-wrap">
+              <img src="assets/card_psayco.jpg" alt="Psayco" />
+              <span class="role-tag red">VOCAL</span>
+            </div>
+            <h3>PSAYCO</h3>
+            <p>Grito Sônico &amp; Microfonada</p>
+          </article>
+
+          <article class="band-card" data-member="julian">
+            <div class="card-img-wrap">
+              <img src="assets/card_julian.jpg" alt="Julian" />
+              <span class="role-tag yellow">GUITARRA</span>
+            </div>
+            <h3>JULIAN</h3>
+            <p>Riff Cortante &amp; Guitar Spin</p>
+          </article>
+
+          <article class="band-card" data-member="delleiw">
+            <div class="card-img-wrap">
+              <img src="assets/card_delleiw.jpg" alt="Delleiw" />
+              <span class="role-tag purple">BAIXO</span>
+            </div>
+            <h3>DELLEIW</h3>
+            <p>Grave Sísmico &amp; Choker Spike</p>
+          </article>
+
+          <article class="band-card" data-member="misa">
+            <div class="card-img-wrap">
+              <img src="assets/card_misa_rage.jpg" alt="Misa" />
+              <span class="role-tag green">BATERIA</span>
+            </div>
+            <h3>MISA</h3>
+            <p>Bumbo Duplo &amp; Fúria Insana</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Top 3 Global Leaderboard Strip -->
+      <section class="leaderboard-strip" id="title-leaderboard">
+        <div class="lb-strip-header">
+          <span class="lb-strip-title">🏆 TOP 3 DO MOSH</span>
+          <span id="title-lb-mode" class="lb-mode-badge">🌐 GLOBAL</span>
+        </div>
+        <div id="title-lb-list" class="lb-list lb-list-horizontal">
+          <div class="lb-empty">Carregando ranking...</div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- SELEÇÃO DE PERSONAGEM (PUNKS + BANDA) -->
+  <section id="screen-select" class="screen">
+    <div class="select-container">
+      <div class="screen-top-bar">
+        <button id="btn-select-back" class="punk-btn ghost-btn small">⬅ VOLTAR</button>
+        <h2 class="screen-heading">ESCOLHA SEU LUTADOR NO MOSH</h2>
+        <div class="stage-picker-mini">
+          <label for="select-stage-dropdown">FASE:</label>
+          <select id="select-stage-dropdown"></select>
+        </div>
+      </div>
+
+      <div class="roster-tabs">
+        <button class="tab-btn active" data-filter="all">TODOS (8)</button>
+        <button class="tab-btn" data-filter="punk">VÁLVULETES / VÁLVULOVERS</button>
+        <button class="tab-btn" data-filter="band">BANDA VÁLVULA 77</button>
+      </div>
+
+      <div class="select-split">
+        <div id="roster-grid" class="roster-grid"></div>
+
+        <aside id="char-preview" class="char-preview">
+          <div class="preview-portrait-box">
+            <canvas id="preview-canvas" width="240" height="240"></canvas>
+            <span id="preview-badge" class="preview-badge">VÁLVULOVER</span>
+          </div>
+          <h3 id="preview-name">KAOS</h3>
+          <p id="preview-role" class="preview-role">Punk Moicano • Linha de Frente</p>
+          <p id="preview-bio" class="preview-bio"></p>
+
+          <div class="stat-bars">
+            <div class="stat-row"><span>FORÇA</span><div class="bar"><div id="stat-str" class="fill red"></div></div></div>
+            <div class="stat-row"><span>VELOCIDADE</span><div class="bar"><div id="stat-spd" class="fill yellow"></div></div></div>
+            <div class="stat-row"><span>EQUILÍBRIO</span><div class="bar"><div id="stat-def" class="fill green"></div></div></div>
+          </div>
+
+          <div class="special-box">
+            <span class="special-label">⚡ ESPECIAL DE MOSH:</span>
+            <strong id="preview-special">VOADORA DE COTURNO</strong>
+          </div>
+
+          <button id="btn-launch-game" class="punk-btn mega-btn full-width">
+            🔥 QUEBRAR TUDO NO SHOW! 🔥
+          </button>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETLIST / SELEÇÃO DE FASES -->
+  <section id="screen-stages" class="screen">
+    <div class="select-container">
+      <div class="screen-top-bar">
+        <button id="btn-stages-back" class="punk-btn ghost-btn small">⬅ VOLTAR</button>
+        <h2 class="screen-heading">SETLIST DO SHOW — FASES SINCRONIZADAS</h2>
+        <span></span>
+      </div>
+      <div id="stages-grid" class="stages-grid"></div>
+    </div>
+  </section>
+
+  <!-- GAMEPLAY SCREEN -->
+  <section id="screen-game" class="screen">
+    <div class="game-wrapper">
+      <canvas id="game-canvas" width="1280" height="720"></canvas>
+
+      <!-- Top HUD Overlay -->
+      <div class="hud-top">
+        <div class="hud-player">
+          <div class="hud-avatar-ring">
+            <img id="hud-avatar-img" src="" alt="" style="display:none;" />
+            <canvas id="hud-avatar-canvas" width="64" height="64"></canvas>
+          </div>
+          <div class="hud-bars">
+            <div class="hud-name-row">
+              <span id="hud-player-name">KAOS</span>
+              <span id="hud-weapon-tag" class="weapon-pill">PUNHOS</span>
+            </div>
+            <div class="hp-track"><div id="hud-hp-fill" class="hp-fill"></div><span id="hud-hp-text">100 / 100</span></div>
+            <div class="mosh-track"><div id="hud-mosh-fill" class="mosh-fill"></div><span id="hud-mosh-text">ESPECIAL [ESPAÇO]</span></div>
+          </div>
+        </div>
+
+        <div class="hud-center">
+          <div id="hud-phase-pill" class="phase-pill calm">AQUECENDO O PIT...</div>
+          <div id="hud-song-label" class="hud-song-label">FASE 1 • MOSH DE ARMA BRANCA</div>
+          <div class="hud-score-row">
+            <span>SCORE: <strong id="hud-score">0</strong></span>
+            <span>COMBO: <strong id="hud-combo">0x</strong></span>
+            <span>DERRUBADOS: <strong id="hud-ko">0</strong></span>
+          </div>
+        </div>
+
+        <div class="hud-right">
+          <div class="band-ko-tracker">
+            <div class="tracker-label">MÚSICOS NO PALCO:</div>
+            <div id="hud-band-status" class="band-dots"></div>
+          </div>
+          <div class="hud-buttons">
+            <button id="btn-game-touch" class="mini-hud-btn" title="Controles Touch (Celular)">📱</button>
+            <button id="btn-game-mute" class="mini-hud-btn" title="Som">🔊</button>
+            <button id="btn-game-pause" class="mini-hud-btn" title="Pausar (ESC)">⏸</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Boss Bar (appears when fighting a band member!) -->
+      <div id="boss-hud" class="boss-hud hidden">
+        <img id="boss-hud-img" src="" alt="" />
+        <div class="boss-hud-info">
+          <div class="boss-hud-title">
+            <span id="boss-hud-name">DELLEIW — BAIXISTA</span>
+            <span id="boss-hud-sub">CHEFE NO PALCO</span>
+          </div>
+          <div class="boss-hp-track"><div id="boss-hp-fill" class="boss-hp-fill"></div></div>
+        </div>
+      </div>
+
+      <!-- Controles Touch para Celular / Tablet -->
+      <div id="touch-controls" class="touch-controls hidden">
+        <div class="touch-pad-wrap">
+          <div id="touch-joystick" class="touch-joystick">
+            <div class="joy-ring"></div>
+            <div id="joy-knob" class="joy-knob"></div>
+          </div>
+        </div>
+        <div class="touch-actions">
+          <div class="touch-row">
+            <button class="t-btn t-weapon" data-key="KeyE">🔪<span>ARMA</span></button>
+            <button class="t-btn t-special" data-key="Space">⚡<span>ESP</span></button>
+          </div>
+          <div class="touch-row">
+            <button class="t-btn t-dash" data-key="KeyL">💥<span>OMBRO</span></button>
+            <button class="t-btn t-jump" data-key="KeyK">🦶<span>PULO</span></button>
+            <button class="t-btn t-attack" data-key="KeyJ">👊<span>SOCO</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Quick Controls Hint -->
+      <div class="hud-bottom-hint">
+        <span><b>WASD / SETAS</b> Mover &amp; Subir no Palco</span>
+        <span><b>J / Z</b> Soco / Arma</span>
+        <span><b>K / X</b> Pular / Voadora</span>
+        <span><b>L / C</b> Ombrada (Mosh)</span>
+        <span><b>ESPAÇO / U</b> Especial</span>
+        <span><b>E</b> Pegar Arma</span>
+      </div>
+
+      <!-- PAUSE OVERLAY -->
+      <div id="overlay-pause" class="game-overlay hidden">
+        <div class="overlay-card">
+          <h2>SHOW PAUSADO</h2>
+          <p id="pause-track-info">Tocando agora</p>
+          <div class="overlay-actions">
+            <button id="btn-resume" class="punk-btn primary-btn">▶ VOLTAR PRO MOSH</button>
+            <button id="btn-restart-stage" class="punk-btn secondary-btn">🔄 REINICIAR FASE</button>
+            <button id="btn-pause-menu" class="punk-btn ghost-btn">🏠 TELA INICIAL</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE CLEAR / VICTORY OVERLAY -->
+      <div id="overlay-victory" class="game-overlay hidden">
+        <div class="overlay-card victory">
+          <img src="assets/logo_trans.png" class="overlay-logo" alt="V77" />
+          <h2 id="victory-title">SHOW DESTRUÍDO!</h2>
+          <p id="victory-desc">Você derrubou a roda inteira e invadiu o palco!</p>
+          <div id="victory-stats" class="result-stats"></div>
+
+          <div id="victory-leaderboard" class="overlay-leaderboard">
+            <div class="lb-strip-header">
+              <span class="lb-strip-title">🏆 TOP 3 DO MOSH</span>
+              <span id="victory-lb-mode" class="lb-mode-badge">🌐 GLOBAL</span>
+            </div>
+            <div id="victory-score-status" class="lb-status"></div>
+            <form id="victory-score-form" class="lb-save-form hidden">
+              <input id="victory-name-input" type="text" maxlength="40" placeholder="Digite seu nome completo" autocomplete="name" />
+              <button type="submit" class="punk-btn primary-btn small">💾 SALVAR NO TOP 3</button>
+            </form>
+            <div id="victory-lb-list" class="lb-list"></div>
+          </div>
+
+          <div class="overlay-actions">
+            <button id="btn-next-stage" class="punk-btn primary-btn">⚡ PRÓXIMA MÚSICA</button>
+            <button id="btn-victory-menu" class="punk-btn ghost-btn">🏠 MENU PRINCIPAL</button>
+          </div>
+          <a href="https://www.instagram.com/valvula77/" target="_blank" rel="noopener noreferrer" class="overlay-ig">Siga a banda: @valvula77</a>
+        </div>
+      </div>
+
+      <!-- GAME OVER OVERLAY -->
+      <div id="overlay-gameover" class="game-overlay hidden">
+        <div class="overlay-card gameover">
+          <img src="assets/logo_trans.png" class="overlay-logo" alt="V77" />
+          <h2>V77 GAME OVER</h2>
+          <p id="gameover-quote" class="gameover-quote">"PORRAAAAAAA!!"</p>
+          <p id="gameover-sub">Você foi engolido pelo mosh pit!</p>
+          <div id="gameover-stats" class="result-stats"></div>
+
+          <div id="gameover-leaderboard" class="overlay-leaderboard">
+            <div class="lb-strip-header">
+              <span class="lb-strip-title">🏆 TOP 3 DO MOSH</span>
+              <span id="gameover-lb-mode" class="lb-mode-badge">🌐 GLOBAL</span>
+            </div>
+            <div id="gameover-score-status" class="lb-status"></div>
+            <form id="gameover-score-form" class="lb-save-form hidden">
+              <input id="gameover-name-input" type="text" maxlength="40" placeholder="Digite seu nome completo" autocomplete="name" />
+              <button type="submit" class="punk-btn primary-btn small">💾 SALVAR NO TOP 3</button>
+            </form>
+            <div id="gameover-lb-list" class="lb-list"></div>
+          </div>
+
+          <div class="overlay-actions">
+            <button id="btn-retry" class="punk-btn primary-btn">🤘 VOLTAR PRA RODA</button>
+            <button id="btn-gameover-select" class="punk-btn secondary-btn">🎭 TROCAR LUTADOR</button>
+            <button id="btn-gameover-menu" class="punk-btn ghost-btn">🏠 TELA INICIAL</button>
+          </div>
+          <a href="https://www.instagram.com/valvula77/" target="_blank" rel="noopener noreferrer" class="overlay-ig">Instagram oficial: @valvula77</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTROLS MODAL -->
+  <div id="modal-controls" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>MANUAL DE SOBREVIVÊNCIA NO MOSH</h2>
+        <button id="btn-close-controls" class="close-x">✖</button>
+      </div>
+      <div class="controls-grid">
+        <div class="ctrl-item"><kbd>W A S D</kbd> ou <kbd>↑ ↓ ← →</kbd><span>Andar na pista e subir no palco (parte superior!)</span></div>
+        <div class="ctrl-item"><kbd>J</kbd> ou <kbd>Z</kbd><span>Combo de 3 golpes / Usar Arma Branca</span></div>
+        <div class="ctrl-item"><kbd>K</kbd> ou <kbd>X</kbd><span>Pular (+ Ataque no ar = Voadora!)</span></div>
+        <div class="ctrl-item"><kbd>L</kbd> ou <kbd>C</kbd><span>Ombrada de Mosh (empurra em efeito dominó!)</span></div>
+        <div class="ctrl-item"><kbd>ESPAÇO</kbd> ou <kbd>U</kbd><span>Golpe Especial Caótico (barra cheia)</span></div>
+        <div class="ctrl-item"><kbd>E</kbd><span>Pegar Faca 🔪, Martelo 🔨, Foice ⚰️ ou Garrafa 🍾</span></div>
+      </div>
+      <div class="controls-tip">
+        <strong>DICA DE SHOW:</strong> Quando a música entra na parte pesada (<b>MOSH PIT ATIVADO!</b>), toda a plateia pira! Use a <b>Ombrada (L/C)</b> pra jogar inimigos uns nos outros, colete armas brancas no chão e <b>suba no palco lá em cima</b> pra derrubar o Delleiw, Julian, Psayco e Misa!
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

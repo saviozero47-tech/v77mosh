@@ -1,0 +1,1659 @@
+:root {
+  --bg: #08080a;
+  --panel: #121216;
+  --panel-alt: #1b1b22;
+  --red: #c40000;
+  --red-hot: #ff0000;
+  --yellow: #facc15;
+  --purple: #a855f7;
+  --green: #22c55e;
+  --bone: #f4f1ea;
+  --muted: #9ca3af;
+  --border: #2c2c35;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--bone);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Gritty xerox / punk flyer overlays */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 900;
+  opacity: 0.06;
+  background-image: radial-gradient(rgba(255,255,255,0.4) 1px, transparent 0);
+  background-size: 3px 3px;
+}
+
+.scanline-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 901;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.14) 3px,
+    rgba(0, 0, 0, 0.14) 4px
+  );
+}
+
+.screen {
+  position: fixed;
+  inset: 0;
+  display: none;
+  width: 100%;
+  height: 100%;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* Buttons */
+.punk-btn {
+  font-family: 'Anton', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border: 3px solid var(--bone);
+  padding: 12px 24px;
+  font-size: 1.15rem;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.12s ease;
+  box-shadow: 5px 5px 0 #000;
+  background: var(--panel-alt);
+  color: var(--bone);
+  clip-path: polygon(0 4px, 100% 0, calc(100% - 4px) 100%, 4px calc(100% - 2px));
+}
+
+.punk-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--red);
+}
+
+.punk-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #000;
+}
+
+.primary-btn, .mega-btn {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--bone);
+}
+
+.primary-btn:hover, .mega-btn:hover {
+  background: var(--red-hot);
+  box-shadow: 7px 7px 0 var(--yellow);
+}
+
+.mega-btn {
+  font-size: 1.45rem;
+  padding: 16px 34px;
+}
+
+.secondary-btn {
+  background: var(--yellow);
+  color: #09090b;
+  border-color: #09090b;
+}
+
+.secondary-btn:hover {
+  background: #fde047;
+  box-shadow: 7px 7px 0 var(--red);
+}
+
+.ghost-btn {
+  background: rgba(15, 15, 20, 0.85);
+  color: var(--bone);
+}
+
+.punk-btn.small {
+  padding: 8px 16px;
+  font-size: 0.95rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* ===== BOOT SCREEN ===== */
+#screen-boot {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #2b0404 0%, #050507 72%);
+}
+
+.boot-box {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 36px;
+  animation: fadeIn 0.4s ease;
+}
+
+.boot-logo {
+  width: 240px;
+  height: 240px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 28px rgba(220, 0, 0, 0.85));
+  animation: pulseLogo 2s ease-in-out infinite;
+}
+
+.boot-title {
+  font-family: 'Black Ops One', cursive;
+  font-size: 3.6rem;
+  letter-spacing: 4px;
+  color: var(--bone);
+  text-shadow: 4px 4px 0 var(--red), 8px 8px 0 #000;
+}
+
+.boot-sub {
+  font-family: 'Permanent Marker', cursive;
+  font-size: 1.65rem;
+  color: var(--yellow);
+  margin-bottom: 12px;
+  transform: rotate(-1.5deg);
+}
+
+.boot-hint {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  letter-spacing: 2px;
+}
+
+/* ===== TITLE SCREEN ===== */
+#screen-title {
+  position: relative;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  background: #070709;
+}
+
+.title-bg-photo {
+  position: absolute;
+  inset: 0;
+  background: url('assets/band_group.jpg') center 20% / cover no-repeat;
+  opacity: 0.14;
+  filter: grayscale(100%) contrast(160%);
+  z-index: 0;
+}
+
+#menu-visualizer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.audio-deck {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(12, 12, 16, 0.92);
+  border: 2px solid var(--red);
+  padding: 8px 14px;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.deck-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--yellow);
+  max-width: 390px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--red-hot);
+  box-shadow: 0 0 10px var(--red-hot);
+  animation: blink 0.8s infinite;
+  flex-shrink: 0;
+}
+
+.deck-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.deck-controls button {
+  background: #1f1f27;
+  color: var(--bone);
+  border: 1px solid #444;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.deck-controls button:hover {
+  background: var(--red);
+}
+
+.ig-badge {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  background: rgba(12, 12, 16, 0.92);
+  border: 2px solid var(--bone);
+  color: var(--bone);
+  font-family: 'Anton', sans-serif;
+  letter-spacing: 1.5px;
+  font-size: 1.05rem;
+  padding: 7px 14px;
+  box-shadow: 4px 4px 0 var(--red);
+  transition: transform 0.1s;
+}
+
+.ig-badge:hover {
+  transform: translate(-2px, -2px);
+  background: var(--red);
+  color: #fff;
+}
+
+.title-layout {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 64px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  gap: 16px;
+}
+
+.title-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+  flex: 1;
+}
+
+.logo-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.hero-logo {
+  width: clamp(190px, 24vw, 290px);
+  height: clamp(190px, 24vw, 290px);
+  object-fit: contain;
+  filter: drop-shadow(0 0 28px rgba(235, 0, 0, 0.92));
+  transition: transform 0.05s linear;
+}
+
+.hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.tag-pill {
+  background: var(--yellow);
+  color: #09090b;
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  letter-spacing: 1.5px;
+  transform: rotate(-1deg);
+}
+
+.game-title {
+  font-family: 'Black Ops One', cursive;
+  font-size: clamp(2.8rem, 6vw, 5.2rem);
+  line-height: 0.95;
+  color: var(--bone);
+  text-shadow: 5px 5px 0 #d60000, 10px 10px 0 #000;
+}
+
+.game-subtitle {
+  font-family: 'Permanent Marker', cursive;
+  font-size: clamp(1.3rem, 2.7vw, 2.2rem);
+  color: #ff0000;
+  text-shadow: 3px 3px 0 #000, 0 0 14px rgba(255, 0, 0, 0.55);
+  transform: rotate(-1.2deg);
+  margin-bottom: 10px;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+/* Band Lineup Strip */
+.band-lineup {
+  background: rgba(10, 10, 14, 0.88);
+  border-top: 3px solid var(--red);
+  border-bottom: 3px solid var(--bone);
+  padding: 12px 18px 16px;
+}
+
+.lineup-header {
+  margin-bottom: 10px;
+}
+
+.lineup-label {
+  font-family: 'Anton', sans-serif;
+  letter-spacing: 2px;
+  font-size: 0.95rem;
+  color: var(--yellow);
+}
+
+.band-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.band-card {
+  background: #14141a;
+  border: 2px solid #2e2e38;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.band-card:hover {
+  transform: translateY(-5px) rotate(-1deg);
+  border-color: var(--red-hot);
+}
+
+.card-img-wrap {
+  position: relative;
+  width: 100%;
+  height: clamp(105px, 16vh, 155px);
+  overflow: hidden;
+  background: #000;
+}
+
+.card-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  filter: contrast(115%);
+}
+
+.role-tag {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  font-family: 'Anton', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  color: #fff;
+  background: var(--red);
+  box-shadow: 2px 2px 0 #000;
+}
+
+.role-tag.yellow { background: var(--yellow); color: #09090b; }
+.role-tag.purple { background: var(--purple); }
+.role-tag.green { background: var(--green); color: #052e16; }
+
+.band-card h3 {
+  font-family: 'Anton', sans-serif;
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+  color: var(--bone);
+  margin-top: 2px;
+}
+
+.band-card p {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* ===== CHARACTER SELECT & STAGE SELECT ===== */
+#screen-select, #screen-stages {
+  background: radial-gradient(circle at top right, #280404, #070709 65%);
+  padding: 20px;
+  justify-content: center;
+  align-items: center;
+}
+
+.select-container {
+  width: 100%;
+  max-width: 1240px;
+  height: 100%;
+  max-height: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.screen-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 3px solid var(--red);
+  padding-bottom: 10px;
+}
+
+.screen-heading {
+  font-family: 'Black Ops One', cursive;
+  font-size: clamp(1.3rem, 2.6vw, 2.1rem);
+  letter-spacing: 2px;
+  color: var(--bone);
+  text-shadow: 3px 3px 0 #000;
+}
+
+.stage-picker-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--yellow);
+}
+
+.stage-picker-mini select {
+  background: #14141c;
+  color: var(--bone);
+  border: 2px solid var(--bone);
+  padding: 6px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.roster-tabs {
+  display: flex;
+  gap: 10px;
+}
+
+.tab-btn {
+  background: #181820;
+  color: var(--muted);
+  border: 2px solid #333;
+  padding: 6px 16px;
+  font-family: 'Anton', sans-serif;
+  letter-spacing: 1px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--bone);
+}
+
+.select-split {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+}
+
+.roster-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  align-content: start;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.roster-tile {
+  background: #131319;
+  border: 3px solid #2e2e3a;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.1s, border-color 0.1s, background 0.1s;
+  box-shadow: 4px 4px 0 #000;
+  position: relative;
+}
+
+.roster-tile:hover {
+  border-color: var(--yellow);
+  transform: translateY(-3px);
+}
+
+.roster-tile.selected {
+  border-color: var(--red-hot);
+  background: #280606;
+  box-shadow: 0 0 0 2px var(--yellow), 6px 6px 0 #000;
+}
+
+.roster-tile .tile-thumb {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #09090d;
+  border: 2px solid #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.roster-tile .tile-thumb img,
+.roster-tile .tile-thumb canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.roster-tile .tile-name {
+  font-family: 'Anton', sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 1px;
+  color: var(--bone);
+}
+
+.roster-tile .tile-sub {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.tile-type-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 2px 5px;
+  background: #272732;
+  color: var(--yellow);
+}
+
+.tile-type-dot.band {
+  background: var(--red);
+  color: #fff;
+}
+
+.char-preview {
+  background: #111117;
+  border: 3px solid var(--bone);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 8px 8px 0 #000;
+}
+
+.preview-portrait-box {
+  position: relative;
+  background: radial-gradient(circle at center, #320505 0%, #09090c 75%);
+  border: 2px solid #2c2c38;
+  height: 195px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#preview-canvas {
+  max-height: 185px;
+  width: auto;
+}
+
+.preview-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: var(--yellow);
+  color: #09090b;
+  font-family: 'Anton', sans-serif;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+}
+
+.char-preview h3 {
+  font-family: 'Black Ops One', cursive;
+  font-size: 1.9rem;
+  color: var(--bone);
+  line-height: 1;
+}
+
+.preview-role {
+  font-size: 0.82rem;
+  color: var(--yellow);
+  font-weight: 800;
+}
+
+.preview-bio {
+  font-size: 0.78rem;
+  color: #d1d5db;
+  line-height: 1.35;
+}
+
+.stat-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.stat-row .bar {
+  height: 10px;
+  background: #252530;
+  border: 1px solid #444;
+}
+
+.stat-row .fill {
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.fill.red { background: var(--red-hot); }
+.fill.yellow { background: var(--yellow); }
+.fill.green { background: var(--green); }
+
+.special-box {
+  background: #1d0c0c;
+  border-left: 4px solid var(--red-hot);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.special-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.special-box strong {
+  font-family: 'Anton', sans-serif;
+  letter-spacing: 1px;
+  color: var(--yellow);
+  font-size: 1.05rem;
+}
+
+/* Stages Grid */
+.stages-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.stage-card {
+  background: #121218;
+  border: 3px solid #30303c;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 6px 6px 0 #000;
+  transition: transform 0.12s, border-color 0.12s;
+}
+
+.stage-card:hover {
+  transform: translate(-3px, -3px);
+  border-color: var(--red-hot);
+}
+
+.stage-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stage-num {
+  background: var(--red);
+  color: #fff;
+  font-family: 'Anton', sans-serif;
+  padding: 2px 10px;
+  font-size: 0.85rem;
+}
+
+.stage-boss-tag {
+  font-size: 0.78rem;
+  color: var(--yellow);
+  font-weight: 800;
+}
+
+.stage-card h3 {
+  font-family: 'Black Ops One', cursive;
+  font-size: 1.45rem;
+  color: var(--bone);
+}
+
+.stage-card p {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+/* ===== GAMEPLAY SCREEN ===== */
+#screen-game {
+  background: #040406;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game-canvas {
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
+  object-fit: contain;
+  background: #0a0a0e;
+  box-shadow: 0 0 60px rgba(0,0,0,0.9);
+}
+
+.hud-top {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  right: 16px;
+  display: grid;
+  grid-template-columns: 330px 1fr 270px;
+  align-items: start;
+  gap: 12px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.hud-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(10, 10, 14, 0.86);
+  border: 2px solid var(--bone);
+  padding: 8px 10px;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.hud-avatar-ring {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 3px solid var(--red-hot);
+  overflow: hidden;
+  background: #000;
+  flex-shrink: 0;
+}
+
+.hud-avatar-ring img,
+.hud-avatar-ring canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hud-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hud-name-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Anton', sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: 1px;
+}
+
+.weapon-pill {
+  background: var(--yellow);
+  color: #09090b;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 6px;
+}
+
+.weapon-pill.special {
+  background: linear-gradient(90deg, #ea580c, #ef4444);
+  color: #fef08a;
+  border: 1px solid #facc15;
+  font-size: 0.63rem;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.65);
+}
+
+.hp-track, .mosh-track {
+  position: relative;
+  height: 16px;
+  background: #22222c;
+  border: 1px solid #555;
+  overflow: hidden;
+}
+
+.mosh-track {
+  height: 13px;
+}
+
+.hp-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+  transition: width 0.1s ease;
+}
+
+.mosh-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #eab308, #f97316, #ef4444);
+  transition: width 0.1s ease;
+}
+
+.hp-track span, .mosh-track span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.hud-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.phase-pill {
+  font-family: 'Anton', sans-serif;
+  letter-spacing: 2px;
+  font-size: 1.05rem;
+  padding: 4px 16px;
+  border: 2px solid var(--bone);
+  box-shadow: 4px 4px 0 #000;
+}
+
+.phase-pill.calm {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.phase-pill.mosh {
+  background: var(--red-hot);
+  color: var(--yellow);
+  animation: shakeTiny 0.25s infinite;
+}
+
+.hud-song-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--bone);
+  background: rgba(0, 0, 0, 0.72);
+  padding: 2px 10px;
+}
+
+.hud-score-row {
+  display: flex;
+  gap: 14px;
+  font-size: 0.78rem;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 3px 12px;
+  border: 1px solid #333;
+}
+
+.hud-score-row strong {
+  color: var(--yellow);
+}
+
+.hud-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.band-ko-tracker {
+  background: rgba(10, 10, 14, 0.86);
+  border: 2px solid #444;
+  padding: 6px 10px;
+  text-align: right;
+}
+
+.tracker-label {
+  font-size: 0.62rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.band-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.band-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  overflow: hidden;
+  position: relative;
+}
+
+.band-dot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.band-dot.ko {
+  border-color: var(--red);
+  filter: grayscale(100%) brightness(45%);
+}
+
+.band-dot.ko::after {
+  content: '✖';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--red-hot);
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.hud-buttons {
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.mini-hud-btn {
+  width: 38px;
+  height: 38px;
+  background: rgba(15, 15, 22, 0.9);
+  color: var(--bone);
+  border: 2px solid var(--bone);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.mini-hud-btn:hover {
+  background: var(--red);
+}
+
+/* Boss HUD — posicionado no topo central, sem cobrir controles nem o mosh */
+.boss-hud {
+  position: absolute;
+  top: 102px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(470px, 76vw);
+  background: rgba(12, 8, 12, 0.92);
+  border: 2px solid var(--red-hot);
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 0 20px rgba(220, 0, 0, 0.65);
+  z-index: 25;
+  pointer-events: none;
+}
+
+.boss-hud img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--yellow);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.boss-hud-info {
+  flex: 1;
+}
+
+.boss-hud-title {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Anton', sans-serif;
+  letter-spacing: 1.2px;
+  font-size: 0.92rem;
+  margin-bottom: 3px;
+}
+
+#boss-hud-sub {
+  color: var(--yellow);
+  font-size: 0.74rem;
+}
+
+.boss-hp-track {
+  height: 12px;
+  background: #23141a;
+  border: 1px solid #666;
+}
+
+.boss-hp-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #facc15, #ef4444);
+  transition: width 0.1s;
+}
+
+/* ===== CONTROLES TOUCH (CELULAR / TABLET) ===== */
+.touch-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 16px 20px 22px;
+  touch-action: none;
+}
+
+.touch-pad-wrap {
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.touch-joystick {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: rgba(12, 12, 18, 0.58);
+  border: 3px solid rgba(244, 241, 234, 0.55);
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.joy-ring {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px dashed rgba(250, 204, 21, 0.35);
+  pointer-events: none;
+}
+
+.joy-knob {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff0000, #7a0000);
+  border: 3px solid var(--bone);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  transform: translate(0px, 0px);
+}
+
+.touch-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.touch-row {
+  display: flex;
+  gap: 10px;
+}
+
+.t-btn {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  border: 3px solid rgba(244, 241, 234, 0.85);
+  background: rgba(18, 18, 26, 0.78);
+  color: #fff;
+  font-size: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.75);
+  touch-action: none;
+  cursor: pointer;
+}
+
+.t-btn span {
+  font-family: 'Anton', sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.8px;
+  margin-top: 2px;
+}
+
+.t-btn:active, .t-btn.pressed {
+  transform: scale(0.92);
+  filter: brightness(1.25);
+}
+
+.t-attack { background: rgba(204, 0, 0, 0.88); width: 74px; height: 74px; }
+.t-jump { background: rgba(37, 99, 235, 0.82); }
+.t-dash { background: rgba(234, 179, 8, 0.85); color: #09090b; }
+.t-special { background: rgba(168, 85, 247, 0.82); }
+.t-special.ready {
+  border-color: var(--yellow);
+  box-shadow: 0 0 18px var(--yellow);
+  animation: shakeTiny 0.3s infinite;
+}
+.t-weapon { background: rgba(34, 197, 94, 0.82); color: #052e16; }
+
+/* Responsivo para Celulares e Telas Menores */
+@media (max-width: 920px), (max-height: 540px) {
+  .title-layout { padding: 54px 14px 12px; gap: 10px; overflow-y: auto; }
+  .title-hero { flex-direction: column; text-align: center; gap: 12px; }
+  .hero-text { align-items: center; }
+  .hero-logo { width: 130px; height: 130px; }
+  .band-cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .card-img-wrap { height: 90px; }
+  .audio-deck { top: 8px; left: 8px; padding: 5px 8px; max-width: 58vw; }
+  .ig-badge { top: 8px; right: 8px; padding: 5px 10px; font-size: 0.85rem; }
+
+  .select-split { grid-template-columns: 1fr; overflow-y: auto; }
+  .roster-grid { grid-template-columns: repeat(4, 1fr); }
+  .stages-grid { grid-template-columns: 1fr; }
+
+  .hud-top { grid-template-columns: 1fr auto auto; gap: 6px; top: 6px; left: 8px; right: 8px; }
+  .hud-player { padding: 5px 7px; }
+  .hud-avatar-ring { width: 38px; height: 38px; }
+  .hud-center { gap: 2px; }
+  .phase-pill { font-size: 0.78rem; padding: 2px 8px; }
+  .hud-song-label { display: none; }
+  .hud-score-row { font-size: 0.68rem; gap: 8px; padding: 2px 8px; }
+  .band-ko-tracker { display: none; }
+  .boss-hud { top: 66px; width: min(360px, 84vw); padding: 4px 10px; }
+  .boss-hud img { width: 32px; height: 32px; }
+  .hud-bottom-hint { display: none; }
+}
+
+.hud-bottom-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(0, 0, 0, 0.78);
+  padding: 4px 14px;
+  border: 1px solid #2b2b34;
+  font-size: 0.72rem;
+  color: #d1d5db;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.hud-bottom-hint b {
+  color: var(--yellow);
+}
+
+/* Overlays & Modals */
+.hidden {
+  display: none !important;
+}
+
+.game-overlay, .modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 8, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+.overlay-card, .modal-card {
+  background: #111116;
+  border: 4px solid var(--bone);
+  padding: 28px 34px;
+  max-width: 560px;
+  width: 92%;
+  text-align: center;
+  box-shadow: 10px 10px 0 var(--red);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.overlay-card.victory {
+  box-shadow: 10px 10px 0 var(--green);
+}
+
+.overlay-logo {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+}
+
+.overlay-card h2 {
+  font-family: 'Black Ops One', cursive;
+  font-size: 2.3rem;
+  color: var(--red-hot);
+  text-shadow: 3px 3px 0 #000;
+}
+
+.gameover-quote {
+  font-family: 'Permanent Marker', cursive;
+  font-size: 1.55rem;
+  color: var(--yellow);
+  text-shadow: 3px 3px 0 #b30000, 5px 5px 0 #000;
+  transform: rotate(-1.5deg);
+  line-height: 1.2;
+}
+
+.overlay-card.victory h2 {
+  color: var(--yellow);
+}
+
+.result-stats {
+  width: 100%;
+  background: #181820;
+  border: 2px solid #2f2f3c;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.result-stats div strong {
+  display: block;
+  font-family: 'Anton', sans-serif;
+  font-size: 1.45rem;
+  color: var(--yellow);
+}
+
+.overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.overlay-ig {
+  color: var(--yellow);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.overlay-ig:hover {
+  text-decoration: underline;
+}
+
+.modal-card {
+  max-width: 680px;
+  text-align: left;
+  align-items: stretch;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--red);
+  padding-bottom: 10px;
+}
+
+.modal-header h2 {
+  font-family: 'Black Ops One', cursive;
+  font-size: 1.5rem;
+  color: var(--yellow);
+}
+
+.close-x {
+  background: var(--red);
+  color: #fff;
+  border: 2px solid var(--bone);
+  width: 34px;
+  height: 34px;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ctrl-item {
+  background: #191922;
+  border: 1px solid #323242;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.ctrl-item kbd {
+  display: inline-block;
+  width: fit-content;
+  background: var(--yellow);
+  color: #09090b;
+  font-weight: 800;
+  padding: 2px 8px;
+  border: 1px solid #000;
+  font-size: 0.82rem;
+}
+
+.controls-tip {
+  background: #210e15;
+  border-left: 4px solid var(--yellow);
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+@keyframes pulseLogo {
+  0%, 100% { transform: scale(1) rotate(-1deg); }
+  50% { transform: scale(1.05) rotate(1deg); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+@keyframes shakeTiny {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-1px, 1px); }
+  50% { transform: translate(1px, -1px); }
+  75% { transform: translate(-1px, -1px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+
+/* =========================================================
+   RANKING GLOBAL TOP 3 & NOME DO JOGADOR
+========================================================= */
+.leaderboard-strip {
+  width: 100%;
+  background: rgba(14, 14, 20, 0.92);
+  border: 2px solid #2b2b34;
+  border-top: 3px solid var(--yellow);
+  padding: 12px 16px;
+  box-shadow: 6px 6px 0 #000;
+}
+
+.lb-strip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.lb-strip-title {
+  font-family: 'Anton', sans-serif;
+  letter-spacing: 1.5px;
+  font-size: 1rem;
+  color: var(--yellow);
+}
+
+.lb-mode-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border: 1px solid #3f3f46;
+  background: #18181b;
+  color: #d4d4d8;
+}
+
+.lb-mode-badge.is-global {
+  border-color: var(--green);
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.14);
+}
+
+.lb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.lb-list-horizontal {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #17171f;
+  border: 1px solid #2e2e3a;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.lb-row.rank-1 {
+  border-color: rgba(250, 204, 21, 0.65);
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.14), #17171f 65%);
+}
+
+.lb-row.rank-2 {
+  border-color: rgba(203, 213, 225, 0.45);
+}
+
+.lb-row.rank-3 {
+  border-color: rgba(249, 115, 22, 0.45);
+}
+
+.lb-row.is-highlight {
+  outline: 2px solid var(--yellow);
+  box-shadow: 0 0 14px rgba(250, 204, 21, 0.35);
+}
+
+.lb-medal {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.lb-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.lb-name {
+  font-family: 'Anton', sans-serif;
+  letter-spacing: 1px;
+  font-size: 0.95rem;
+  color: var(--bone);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-char {
+  font-size: 0.68rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-score {
+  font-family: 'Black Ops One', cursive;
+  font-size: 1.05rem;
+  color: var(--yellow);
+  flex-shrink: 0;
+}
+
+.lb-empty {
+  grid-column: 1 / -1;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  text-align: center;
+  padding: 8px;
+}
+
+/* Input de nome na seleção de personagem */
+.player-name-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  background: #17171f;
+  border: 2px solid #2e2e3a;
+  padding: 8px 10px;
+}
+
+.player-name-box label {
+  font-family: 'Anton', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 1.2px;
+  color: var(--yellow);
+}
+
+.player-name-box input,
+.lb-save-form input {
+  width: 100%;
+  background: #09090d;
+  border: 2px solid #3f3f46;
+  color: var(--bone);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 7px 10px;
+  outline: none;
+}
+
+.player-name-box input:focus,
+.lb-save-form input:focus {
+  border-color: var(--yellow);
+}
+
+/* Ranking dentro dos overlays de Vitória e Game Over */
+.overlay-card {
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.overlay-leaderboard {
+  width: 100%;
+  background: #0c0c12;
+  border: 2px solid #2e2e3a;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lb-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #4ade80;
+  text-align: center;
+}
+
+.lb-status.is-top3 {
+  color: var(--yellow);
+  font-size: 0.86rem;
+}
+
+.lb-save-form {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.lb-save-form input {
+  flex: 1;
+}
+
+@media (max-width: 780px) {
+  .lb-list-horizontal {
+    grid-template-columns: 1fr;
+  }
+}
