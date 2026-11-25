@@ -1,8 +1,11 @@
-// Cliente do Ranking Global Top 3 (Netlify Database + fallback localStorage offline)
+// Cliente do Ranking Global Top 3 (Supabase REST API + fallback localStorage offline)
 
 const STORAGE_ENTRIES_KEY = 'v77_leaderboard_top3_v1';
 const STORAGE_NAME_KEY = 'v77_player_name_v1';
-const API_URL = '/api/leaderboard';
+const SUPABASE_URL = 'https://mivrrzkiyjirfovrglfx.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_d0iHUDVJloGc5UAZzVjoag_SwvO47lS';
+const REST_ENDPOINT = `${SUPABASE_URL}/rest/v1/leaderboard`;
+const SELECT_FIELDS = 'id,player_name,character_name,stage_name,score,max_combo,created_at';
 
 export function getSavedPlayerName() {
   try {
@@ -67,21 +70,45 @@ function sortEntries(entries) {
   });
 }
 
+function sanitizeField(raw, maxLen, fallback) {
+  const cleaned = sanitizeName(String(raw ?? '')).slice(0, maxLen).trim();
+  return cleaned || fallback;
+}
+
+function mapSupabaseRow(row) {
+  return {
+    id: row.id,
+    playerName: row.player_name,
+    characterName: row.character_name,
+    stageName: row.stage_name,
+    score: Number(row.score || 0),
+    maxCombo: Number(row.max_combo || 0),
+    createdAt: row.created_at,
+  };
+}
+
+async function fetchGlobalTop3() {
+  const url = `${REST_ENDPOINT}?select=${SELECT_FIELDS}&order=score.desc,created_at.asc&limit=3`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      accept: 'application/json',
+    },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const rows = await res.json();
+  if (!Array.isArray(rows)) throw new Error('Invalid payload');
+  return rows.map(mapSupabaseRow).slice(0, 3);
+}
+
 export async function fetchLeaderboard() {
   try {
-    const res = await fetch(API_URL, {
-      method: 'GET',
-      headers: { accept: 'application/json' },
-      cache: 'no-store',
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const ct = res.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) throw new Error('Non-JSON response');
-    const data = await res.json();
-    if (!Array.isArray(data.top3)) throw new Error('Invalid payload');
+    const top3 = await fetchGlobalTop3();
     return {
       mode: 'global',
-      top3: data.top3.slice(0, 3),
+      top3,
     };
   } catch {
     const sorted = sortEntries(readLocalEntries()).slice(0, 3);
@@ -93,8 +120,8 @@ export async function fetchLeaderboard() {
 }
 
 export async function submitLeaderboardScore({ playerName, characterName, stageName, score, maxCombo }) {
-  const cleanScore = Math.floor(Number(score) || 0);
-  const cleanName = sanitizeName(playerName) || 'Anônimo V77';
+  const cleanScore = Math.min(9999999, Math.floor(Number(score) || 0));
+  const cleanName = sanitizeField(playerName, 40, 'Anônimo V77');
   setSavedPlayerName(cleanName);
 
   if (cleanScore <= 0) {
@@ -104,33 +131,66 @@ export async function submitLeaderboardScore({ playerName, characterName, stageN
 
   const payload = {
     playerName: cleanName,
-    characterName: String(characterName || 'KAOS').slice(0, 32),
-    stageName: String(stageName || 'MOSH DE ARMA BRANCA').slice(0, 80),
+    characterName: sanitizeField(characterName, 32, 'KAOS'),
+    stageName: sanitizeField(stageName, 80, 'MOSH DE ARMA BRANCA'),
     score: cleanScore,
-    maxCombo: Math.max(0, Math.floor(Number(maxCombo) || 0)),
+    maxCombo: Math.max(0, Math.min(9999, Math.floor(Number(maxCombo) || 0))),
   };
 
   try {
-    const res = await fetch(API_URL, {
+    const res = await fetch(`${REST_ENDPOINT}?select=${SELECT_FIELDS}`, {
       method: 'POST',
       headers: {
+        apikey: SUPABASE_PUBLISHABLE_KEY,
         'content-type': 'application/json',
         accept: 'application/json',
+        prefer: 'return=representation',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        player_name: payload.playerName,
+        character_name: payload.characterName,
+        stage_name: payload.stageName,
+        score: payload.score,
+        max_combo: payload.maxCombo,
+      }),
     });
+
+    if (res.status === 401 || res.status === 403) {
+      let errData = null;
+      try {
+        errData = await res.json();
+      } catch {
+        // ignore JSON parse errors
+      }
+      if (errData?.code === '42501') {
+        const top3 = await fetchGlobalTop3();
+        return {
+          mode: 'global',
+          saved: false,
+          id: null,
+          rank: null,
+          inTop3: false,
+          top3,
+        };
+      }
+      throw new Error(`HTTP ${res.status}`);
+    }
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const ct = res.headers.get('content-type') || '';
-    if (!ct.includes('application/json')) throw new Error('Non-JSON response');
-    const data = await res.json();
-    if (!Array.isArray(data.top3)) throw new Error('Invalid payload');
+    const inserted = await res.json();
+    const savedRow = Array.isArray(inserted) ? inserted[0] : inserted;
+    const top3 = await fetchGlobalTop3();
+    const savedId = savedRow?.id ?? null;
+    const rankIdx = savedId != null ? top3.findIndex((r) => String(r.id) === String(savedId)) : -1;
+    const rank = rankIdx >= 0 ? rankIdx + 1 : null;
+
     return {
       mode: 'global',
-      saved: Boolean(data.saved),
-      id: data.id ?? null,
-      rank: data.rank != null ? Number(data.rank) : null,
-      inTop3: Boolean(data.inTop3),
-      top3: data.top3.slice(0, 3),
+      saved: rank !== null,
+      id: savedId,
+      rank,
+      inTop3: rank !== null,
+      top3,
     };
   } catch {
     const entries = sortEntries(readLocalEntries()).slice(0, 3);
