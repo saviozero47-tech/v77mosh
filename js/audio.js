@@ -19,13 +19,15 @@ class V77AudioEngine {
     this.ctx = null;
     this.analyser = null;
     this.masterGain = null;
+    this.sfxGain = null;
     this.menuGain = null;
     this.voiceGain = null;
     this.freqData = null;
+    this.musicVolume = 0.85;
+    this.sfxVolume = 1.0;
 
     // Player de Menu / Sala Secreta (faixa única)
     this.menuAudio = new Audio();
-    this.menuAudio.crossOrigin = 'anonymous';
     this.menuAudio.preload = 'auto';
     this.menuAudio.playsInline = true;
     this.menuAudio.setAttribute('playsinline', '');
@@ -78,7 +80,7 @@ class V77AudioEngine {
     this.menuAudio.addEventListener('timeupdate', () => this._handleMenuTimeUpdate());
     this._pendingMenuResume = false;
     this._pendingStemResume = false;
-    this.menuAudio.addEventListener('play', () => { this._pendingMenuResume = false; });
+    this.menuAudio.addEventListener('playing', () => { this._pendingMenuResume = false; });
     this.menuAudio.addEventListener('ended', () => {
       if (this.mode === 'menu') {
         this.nextMenuTrack();
@@ -114,6 +116,8 @@ class V77AudioEngine {
 
     window.addEventListener('pointerdown', tryWakeAudio, { passive: true });
     window.addEventListener('touchstart', tryWakeAudio, { passive: true });
+    window.addEventListener('touchend', tryWakeAudio, { passive: true });
+    window.addEventListener('click', tryWakeAudio, { passive: true });
     window.addEventListener('keydown', tryWakeAudio, { passive: true });
 
     if (typeof document !== 'undefined') {
@@ -128,21 +132,33 @@ class V77AudioEngine {
   _ensureContextRunning() {
     if (!this.ctx) return;
     if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
-      this.ctx.resume().catch(() => {});
+      this.ctx
+        .resume()
+        .then(() => {
+          if (this.ctx && this.ctx.state === 'running') {
+            this._retryPendingPlayback();
+          }
+        })
+        .catch(() => {});
     }
   }
 
   _retryPendingPlayback() {
     if (this._isPaused || this.muted) return;
-    this._ensureContextRunning();
+    if (this.ctx && this.ctx.state !== 'running') {
+      this._ensureContextRunning();
+    }
     if (this.mode === 'stage' && this.usingStems) {
-      if (this._pendingStemResume && this._activePack && !this._stemPlaying) {
+      if (this._pendingStemResume && this._activePack && !this._stemPlaying && this.ctx && this.ctx.state === 'running') {
         this._startStemNodes(this._activePack, this._pausedSongTime ?? this._stageLoopStart);
-        this._pendingStemResume = false;
       }
       return;
     }
-    if ((this.mode === 'menu' || this.mode === 'secret' || this.mode === 'stage' || this.mode === 'hell') && this._pendingMenuResume) {
+    if (
+      (this.mode === 'menu' || this.mode === 'secret' || this.mode === 'stage' || this.mode === 'hell') &&
+      this.menuAudio.getAttribute('src') &&
+      (this._pendingMenuResume || this.menuAudio.paused)
+    ) {
       const p = this.menuAudio.play();
       if (p && typeof p.catch === 'function') {
         p.catch(() => { this._pendingMenuResume = true; });
@@ -173,13 +189,18 @@ class V77AudioEngine {
       this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
 
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = this.muted ? 0 : 0.85;
+      this.masterGain.gain.value = this.muted ? 0 : this.musicVolume;
       this.analyser.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
 
+      // Canal de efeitos sonoros (SFX) independente da música
+      this.sfxGain = this.ctx.createGain();
+      this.sfxGain.gain.value = this.muted ? 0 : this.sfxVolume;
+      this.sfxGain.connect(this.ctx.destination);
+
       // Canal de voz dedicado (toca mesmo com a música do palco parada)
       this.voiceGain = this.ctx.createGain();
-      this.voiceGain.gain.value = this.muted ? 0 : 1.0;
+      this.voiceGain.gain.value = this.muted ? 0 : this.sfxVolume;
       this.voiceGain.connect(this.ctx.destination);
 
       // Liga player do menu com controle de ganho suave durante seeks
@@ -196,25 +217,57 @@ class V77AudioEngine {
         gain.connect(this.analyser);
         this.stemGains[key] = gain;
       }
+
+      this.ctx.addEventListener('statechange', () => {
+        if (this.ctx && this.ctx.state === 'running') {
+          this._retryPendingPlayback();
+        }
+      });
     }
     this._ensureContextRunning();
   }
 
-  toggleMute() {
-    this.muted = !this.muted;
+  _applyVolumes() {
     if (this.masterGain) {
-      this.masterGain.gain.value = this.muted ? 0 : 0.85;
+      this.masterGain.gain.value = this.muted ? 0 : this.musicVolume;
+    }
+    if (this.sfxGain) {
+      this.sfxGain.gain.value = this.muted ? 0 : this.sfxVolume;
     }
     if (this.voiceGain) {
-      this.voiceGain.gain.value = this.muted ? 0 : 1.0;
+      this.voiceGain.gain.value = this.muted ? 0 : this.sfxVolume;
     }
     this.menuAudio.muted = this.muted;
     this.voiceAudio.muted = this.muted;
+    this.voiceAudio.volume = this.muted ? 0 : this.sfxVolume;
+  }
+
+  setMusicVolume(val) {
+    this.musicVolume = Math.max(0, Math.min(1, Number(val) || 0));
+    this._applyVolumes();
+  }
+
+  setSfxVolume(val) {
+    this.sfxVolume = Math.max(0, Math.min(1, Number(val) || 0));
+    this._applyVolumes();
+  }
+
+  setMuted(muted) {
+    this.muted = Boolean(muted);
+    this._applyVolumes();
+    if (!this.muted) {
+      this._retryPendingPlayback();
+    }
     return this.muted;
+  }
+
+  toggleMute() {
+    return this.setMuted(!this.muted);
   }
 
   _stopMenuAudio() {
     this._menuPlayToken++;
+    this._pendingMenuResume = false;
     if (this._cleanupMenuListeners) {
       this._cleanupMenuListeners();
     }
@@ -229,13 +282,6 @@ class V77AudioEngine {
     try {
       this.menuAudio.playbackRate = 1.0;
     } catch (_) {}
-    if (this.menuAudio.getAttribute('src')) {
-      this.menuAudio.removeAttribute('src');
-      delete this.menuAudio.dataset.rawSrc;
-      try {
-        this.menuAudio.load();
-      } catch (_) {}
-    }
   }
 
   _stopStemNodes() {
@@ -285,7 +331,7 @@ class V77AudioEngine {
   }
 
   async playVoiceClip(src) {
-    if (!src || this.muted) return;
+    if (!src || this.muted || this.sfxVolume <= 0) return;
     this.stopVoiceClip();
 
     if (this.ctx) {
@@ -314,7 +360,7 @@ class V77AudioEngine {
     }
 
     this.voiceAudio.src = src;
-    this.voiceAudio.volume = 1.0;
+    this.voiceAudio.volume = this.sfxVolume;
     this.voiceAudio.play().catch(() => {});
   }
 
@@ -433,6 +479,14 @@ class V77AudioEngine {
     this._stopStemNodes();
     this._ensureContextRunning();
 
+    if (this.ctx.state !== 'running') {
+      this._activePack = pack;
+      this._pausedSongTime = songTimeSec || 0;
+      this._pendingStemResume = true;
+      this._stemPlaying = false;
+      return;
+    }
+
     if (IS_MOBILE) {
       for (const cachedKey of Array.from(this._stemPackCache.keys())) {
         if (cachedKey !== pack.slug) {
@@ -472,6 +526,7 @@ class V77AudioEngine {
     this._stemLoopStartBuf = loopStartBuf;
     this._stemLoopEndBuf = minBufDur;
     this._pausedSongTime = songTimeSec || 0;
+    this._pendingStemResume = false;
     this._stemPlaying = true;
   }
 
@@ -656,10 +711,10 @@ class V77AudioEngine {
         seekApplied = true;
         applySeekAndRate();
         unmuteMenuSmooth();
-        if (!this._isPaused) {
-          const p = this.menuAudio.play();
-          if (p && typeof p.catch === 'function') p.catch(() => { this._pendingMenuResume = true; });
-        }
+      }
+      if (!this._isPaused && this.menuAudio.paused) {
+        const p = this.menuAudio.play();
+        if (p && typeof p.catch === 'function') p.catch(() => { this._pendingMenuResume = true; });
       }
       cleanup();
     };
@@ -667,7 +722,6 @@ class V77AudioEngine {
       if (isValidMenuPlayback()) {
         unmuteMenuSmooth();
       }
-      cleanup();
     }, 1800);
 
     const cleanup = () => {
@@ -922,9 +976,10 @@ class V77AudioEngine {
 
   // Efeitos sonoros sintetizados
   playSFX(type) {
-    if (this.muted || !this.ctx) return;
+    if (this.muted || this.sfxVolume <= 0 || !this.ctx) return;
     this._ensureContextRunning();
     const now = this.ctx.currentTime;
+    const sfxOut = this.sfxGain || this.ctx.destination;
 
     if (type === 'punch' || type === 'slam') {
       const osc = this.ctx.createOscillator();
@@ -935,7 +990,7 @@ class V77AudioEngine {
       g.gain.setValueAtTime(type === 'slam' ? 0.45 : 0.32, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + (type === 'slam' ? 0.2 : 0.11));
       osc.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       osc.start(now);
       osc.stop(now + 0.21);
     } else if (type === 'blade' || type === 'scythe') {
@@ -955,7 +1010,7 @@ class V77AudioEngine {
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
       noise.connect(filt);
       filt.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       noise.start(now);
     } else if (type === 'hammer') {
       const osc = this.ctx.createOscillator();
@@ -971,7 +1026,7 @@ class V77AudioEngine {
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
       osc.connect(g);
       osc2.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       osc.start(now);
       osc2.start(now);
       osc.stop(now + 0.27);
@@ -986,7 +1041,7 @@ class V77AudioEngine {
       g.gain.setValueAtTime(0.2, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
       osc.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       osc.start(now);
       osc.stop(now + 0.19);
     } else if (type === 'beer') {
@@ -1001,7 +1056,7 @@ class V77AudioEngine {
       g.gain.setValueAtTime(0.32, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
       osc.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       osc.start(now);
       osc.stop(now + 0.29);
     } else if (type === 'special') {
@@ -1014,7 +1069,7 @@ class V77AudioEngine {
       g.gain.setValueAtTime(0.42, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
       osc.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       osc.start(now);
       osc.stop(now + 0.5);
     } else if (type === 'hurt') {
@@ -1026,7 +1081,7 @@ class V77AudioEngine {
       g.gain.setValueAtTime(0.3, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
       osc.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       osc.start(now);
       osc.stop(now + 0.17);
     } else if (type === 'flame') {
@@ -1048,7 +1103,7 @@ class V77AudioEngine {
       g.gain.exponentialRampToValueAtTime(0.01, now + 0.13);
       noise.connect(filt);
       filt.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       noise.start(now);
     } else if (type === 'secretEnter' || type === 'secretExit') {
       const osc = this.ctx.createOscillator();
@@ -1071,7 +1126,7 @@ class V77AudioEngine {
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.68);
       osc.connect(g);
       osc2.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       osc.start(now);
       osc2.start(now);
       osc.stop(now + 0.7);
@@ -1106,7 +1161,7 @@ class V77AudioEngine {
 
       osc.connect(filt);
       filt.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
 
       lfo.start(now);
       osc.start(now);
@@ -1129,7 +1184,7 @@ class V77AudioEngine {
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
       osc.connect(g);
       osc2.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       osc.start(now);
       osc2.start(now);
       osc.stop(now + 0.6);
@@ -1152,7 +1207,7 @@ class V77AudioEngine {
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
       noise.connect(filt);
       filt.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       noise.start(now);
     } else if (type === 'valveThrow') {
       // Metal pesado girando + estouro de vapor infernal
@@ -1164,7 +1219,7 @@ class V77AudioEngine {
       g.gain.setValueAtTime(0.3, now);
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
       osc.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       osc.start(now);
       osc.stop(now + 0.37);
 
@@ -1185,7 +1240,7 @@ class V77AudioEngine {
       ng.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
       noise.connect(lp);
       lp.connect(ng);
-      ng.connect(this.ctx.destination);
+      ng.connect(sfxOut);
       noise.start(now);
     } else if (type === 'hellEnter') {
       // Trovão / sub-grave dramático de descida ao inferno
@@ -1202,7 +1257,7 @@ class V77AudioEngine {
       g.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
       osc.connect(g);
       osc2.connect(g);
-      g.connect(this.ctx.destination);
+      g.connect(sfxOut);
       osc.start(now);
       osc2.start(now);
       osc.stop(now + 0.96);

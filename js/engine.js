@@ -1,5 +1,5 @@
 // Motor Principal 2.5D Beat 'em Up — VÁLVULA 77: MOSH DE ARMA BRANCA
-import { BAND_MEMBERS, WEAPONS, FAN_DEATH_QUOTES, HELL_STAGE_CONFIG } from './config.js';
+import { BAND_MEMBERS, WEAPONS, FAN_DEATH_QUOTES, HELL_STAGE_CONFIG, DIFFICULTY_MODES } from './config.js';
 import { audioEngine } from './audio.js';
 import {
   drawFighter,
@@ -171,6 +171,7 @@ export class MoshGameEngine {
     this.time = 0;
     this.hitstop = 0;
     this.shake = 0;
+    this.screenShakeEnabled = true;
     this.moshActive = false;
     this.prevMoshActive = false;
     this.bannerText = '';
@@ -179,6 +180,7 @@ export class MoshGameEngine {
     this.bannerColor = '#ff0000';
 
     this.stage = null;
+    this.difficultyMode = 'punk';
     this.player = null;
     this.enemies = [];
     this.bandFighters = [];
@@ -397,9 +399,47 @@ export class MoshGameEngine {
     return [...this.enemies, ...this.bandFighters];
   }
 
-  startStage(charData, stageData) {
+  _getEffectiveDifficulty() {
+    const mode = DIFFICULTY_MODES[this.difficultyMode] || DIFFICULTY_MODES.punk;
+    const base = (this.stage && this.stage.difficulty) || {};
+    const stageId = this.stage ? this.stage.id : 0;
+
+    const initialCrowd = Math.max(3, Math.round((base.initialCrowd ?? 5) + mode.crowdDelta));
+    const maxCrowdCalm = Math.max(3, Math.round((base.maxCrowdCalm ?? 5) + mode.crowdDelta));
+    const maxCrowdMosh = Math.max(maxCrowdCalm + 1, Math.round((base.maxCrowdMosh ?? 8) + mode.crowdDelta));
+
+    return {
+      mode,
+      label: base.label || 'PADRÃO',
+      initialCrowd,
+      maxCrowdCalm,
+      maxCrowdMosh,
+      spawnCalm: Math.max(1.2, (base.spawnCalm ?? 2.8) * mode.spawnMult),
+      spawnMosh: Math.max(0.85, (base.spawnMosh ?? 1.6) * mode.spawnMult),
+      enemyHp: Math.max(24, Math.round((base.enemyHp ?? (46 + stageId * 10)) * mode.hpMult)),
+      enemyDamage: Math.max(4, Math.round((base.enemyDamage ?? (8 + stageId * 2)) * mode.damageMult)),
+      enemySpeedMin: Math.round((base.enemySpeedMin ?? 112) * mode.speedMult),
+      enemySpeedRange: Math.round((base.enemySpeedRange ?? 48) * mode.speedMult),
+      moshSpeedMult: (base.moshSpeedMult ?? 1.24) * (0.5 + 0.5 * mode.speedMult),
+      attackCooldownCalm: Math.max(0.95, (base.attackCooldownCalm ?? 2.0) * mode.cooldownMult),
+      attackCooldownMosh: Math.max(0.75, (base.attackCooldownMosh ?? 1.45) * mode.cooldownMult),
+      bossHp: Math.max(280, Math.round((base.bossHp ?? (520 + stageId * 140)) * mode.bossHpMult)),
+      bossDamage: Math.max(8, Math.round((base.bossDamage ?? 16) * mode.bossDamageMult)),
+      bossSpeed: Math.round((base.bossSpeed ?? 195) * mode.speedMult),
+      bossAttackCooldown: Math.max(0.65, (base.bossAttackCooldown ?? 1.05) * mode.cooldownMult),
+      bossSpecialCooldown: Math.max(3.2, (base.bossSpecialCooldown ?? 5.2) * mode.cooldownMult),
+      beerHpThreshold: Math.max(0.25, Math.min(0.65, (base.beerHpThreshold ?? 0.42) + mode.beerThresholdDelta)),
+      beerCooldown: Math.max(6.5, (base.beerCooldown ?? 10.5) * (2 - mode.cooldownMult)),
+      weaponDropCalm: base.weaponDropCalm ?? 10.5,
+      weaponDropMosh: base.weaponDropMosh ?? 6.5,
+    };
+  }
+
+  startStage(charData, stageData, difficultyMode = 'punk') {
     this.stop();
     this.stage = stageData;
+    this.difficultyMode = DIFFICULTY_MODES[difficultyMode] ? difficultyMode : 'punk';
+    const diff = this._getEffectiveDifficulty();
     this.running = true;
     this.paused = false;
     this.ended = false;
@@ -530,16 +570,16 @@ export class MoshGameEngine {
         vy: 0,
         vz: 0,
         facing: slot.x > W / 2 ? -1 : 1,
-        hp: isMainBoss ? 520 + stageData.id * 140 : 180,
-        maxHp: isMainBoss ? 520 + stageData.id * 140 : 180,
-        speed: isMainBoss ? 195 : 145,
-        damage: isMainBoss ? 16 : 11,
+        hp: isMainBoss ? diff.bossHp : 180,
+        maxHp: isMainBoss ? diff.bossHp : 180,
+        speed: isMainBoss ? diff.bossSpeed : 145,
+        damage: isMainBoss ? diff.bossDamage : 11,
         state: 'playing',
         aggro: false,
         attackTimer: 0,
         attackDuration: 0.3,
         attackCooldown: 1.2 + idx * 0.3,
-        specialCooldown: 4.5,
+        specialCooldown: isMainBoss ? diff.bossSpecialCooldown : 4.5,
         hurtTimer: 0,
         invulnTimer: 0,
         knockdownTimer: 0,
@@ -551,8 +591,10 @@ export class MoshGameEngine {
       };
     });
 
-    for (let i = 0; i < 6; i++) {
-      this._spawnCrowdEnemy(280 + i * 155, 440 + (i % 3) * 75);
+    const initialCount = diff.initialCrowd;
+    const spacing = Math.min(180, Math.floor((W - 360) / Math.max(1, initialCount - 1)));
+    for (let i = 0; i < initialCount; i++) {
+      this._spawnCrowdEnemy(260 + i * spacing, 440 + (i % 3) * 75);
     }
 
     this._spawnWeapon(W / 2 + 120, 560, stageData.weaponPool[0]);
@@ -600,8 +642,9 @@ export class MoshGameEngine {
     const sx = x ?? (fromLeft ? -35 : W + 35);
     const sy = y ?? (PIT_MIN_Y + 20 + Math.random() * (PIT_MAX_Y - PIT_MIN_Y - 40));
 
-    const baseHp = 46 + this.stage.id * 10;
-    const baseDamage = forceRat ? 15 : 8 + this.stage.id * 2;
+    const diff = this._getEffectiveDifficulty();
+    const baseHp = diff.enemyHp;
+    const baseDamage = forceRat ? Math.max(10, Math.round(15 * diff.mode.damageMult)) : diff.enemyDamage;
 
     const enemy = {
       id: `npc_${Math.random().toString(36).slice(2)}`,
@@ -620,7 +663,7 @@ export class MoshGameEngine {
       facing: sx < W / 2 ? 1 : -1,
       hp: forceRat ? Math.round(baseHp * 1.55) : baseHp,
       maxHp: forceRat ? Math.round(baseHp * 1.55) : baseHp,
-      speed: forceRat ? 132 : 115 + Math.random() * 55,
+      speed: forceRat ? Math.round(132 * diff.mode.speedMult) : diff.enemySpeedMin + Math.random() * diff.enemySpeedRange,
       baseDamage,
       damage: baseDamage,
       state: 'idle',
@@ -1679,13 +1722,14 @@ export class MoshGameEngine {
         this.secretSpawnTimer = 0.24;
       }
     } else {
-      // Spawner de público no mosh
+      // Spawner de público no mosh (escalado pela curva da fase + modo de dificuldade)
+      const diff = this._getEffectiveDifficulty();
       const aliveCrowd = this.enemies.filter((e) => e.state !== 'ko').length;
-      const maxCrowd = this.moshActive ? 10 : 6;
+      const maxCrowd = this.moshActive ? diff.maxCrowdMosh : diff.maxCrowdCalm;
       this.spawnTimer -= dt;
       if (this.spawnTimer <= 0 && aliveCrowd < maxCrowd && !this.ended) {
         this._spawnCrowdEnemy();
-        this.spawnTimer = this.moshActive ? 1.5 : 2.8;
+        this.spawnTimer = this.moshActive ? diff.spawnMosh : diff.spawnCalm;
       }
 
       // FASE FINAL (Santa Catareich): Invasão de "Ratos Saindo do Esgoto"!
@@ -1712,20 +1756,20 @@ export class MoshGameEngine {
       this.weaponDropTimer -= dt;
       if (this.weaponDropTimer <= 0 && this.weaponsOnFloor.length < 3 && !this.ended) {
         this._spawnWeapon();
-        this.weaponDropTimer = this.moshActive ? 6.5 : 10.5;
+        this.weaponDropTimer = this.moshActive ? diff.weaponDropMosh : diff.weaponDropCalm;
       }
 
-      // Spawn de GARRAFA DE CERVEJA (somente quando a vida estiver muito baixa <= 40%!)
+      // Spawn de GARRAFA DE CERVEJA (quando a vida estiver baixa, conforme dificuldade da fase)
       if (this.beerCooldown > 0) this.beerCooldown -= dt;
       if (
         !this.ended &&
         this.player.hp > 0 &&
-        this.player.hp / this.player.maxHp <= 0.40 &&
+        this.player.hp / this.player.maxHp <= diff.beerHpThreshold &&
         this.beersOnFloor.length === 0 &&
         this.beerCooldown <= 0
       ) {
         this._spawnBeer();
-        this.beerCooldown = 11.0;
+        this.beerCooldown = diff.beerCooldown;
       }
     }
 
@@ -2273,8 +2317,10 @@ export class MoshGameEngine {
 
     // Enche barra de especial e dispara o MOTIVO DA RAIVA quando chega em 100%!
     // O multiplicador do mosh continua valendo para pontuação, mas não para a carga.
+    // Golpe leve: +4 | Golpe pesado: +6 | Bônus de K.O.: +3
     if (chargeMeter) {
-      p.moshMeter = Math.min(100, p.moshMeter + (heavy ? 5 : 3));
+      const meterGain = (heavy ? 6 : 4) + (t.hp <= 0 ? 3 : 0);
+      p.moshMeter = Math.min(100, p.moshMeter + meterGain);
       if (p.moshMeter >= 100 && !p.wasMoshFull) {
         p.wasMoshFull = true;
         this._showBanner(`💢 FÚRIA 100% — APERTE ESPAÇO! 💢`, p.rageReason.toUpperCase(), '#facc15', 2.8);
@@ -2593,7 +2639,8 @@ export class MoshGameEngine {
         if (e.z === 0 && !e.isRatSuit && Math.random() < dt * (canClimb && p.onStage ? 2.6 : 1.35)) {
           e.vz = canClimb && p.onStage ? 300 + Math.random() * 130 : 260 + Math.random() * 140;
         }
-        const spd = e.speed * (this.moshActive ? 1.35 : 1.05);
+        const moshMultSpd = this.hellMode ? 1.35 : this._getEffectiveDifficulty().moshSpeedMult;
+        const spd = e.speed * (this.moshActive ? moshMultSpd : 1.05);
         if (dist > 56) {
           e.vx = (dx / dist) * spd;
           e.vy = (dy / dist) * spd * 0.72;
@@ -2632,7 +2679,14 @@ export class MoshGameEngine {
 
       if ((!p.onStage || canClimb) && dist < 62 && Math.abs(p.y - e.y) < 34 && e.attackCooldown <= 0) {
         e.attackTimer = e.attackDuration;
-        e.attackCooldown = this.moshActive ? 1.35 + Math.random() * 0.5 : 2.0 + Math.random() * 0.6;
+        if (this.hellMode) {
+          e.attackCooldown = this.moshActive ? 1.35 + Math.random() * 0.5 : 2.0 + Math.random() * 0.6;
+        } else {
+          const diff = this._getEffectiveDifficulty();
+          e.attackCooldown = this.moshActive
+            ? diff.attackCooldownMosh + Math.random() * 0.5
+            : diff.attackCooldownCalm + Math.random() * 0.6;
+        }
         const variedDmg = this._rollMoshEnemyDamage(e);
         e.damage = variedDmg;
         this._hurtPlayer(variedDmg, e.facing * 210);
@@ -2826,14 +2880,15 @@ export class MoshGameEngine {
       b.y = Math.max(minY, Math.min(maxY, b.y + b.vy * dt));
 
       if (dist < 84 && Math.abs(p.y - b.y) < 42 && b.attackCooldown <= 0) {
+        const diff = this._getEffectiveDifficulty();
         b.attackTimer = b.attackDuration;
-        b.attackCooldown = b.isBoss ? 1.05 : 1.5;
+        b.attackCooldown = b.isBoss ? diff.bossAttackCooldown : 1.5;
         audioEngine.playSFX('slam');
         this._hurtPlayer(b.damage, b.facing * 320);
       }
 
       if (b.isBoss && b.specialCooldown <= 0 && dist < 340) {
-        b.specialCooldown = 5.2;
+        b.specialCooldown = this._getEffectiveDifficulty().bossSpecialCooldown;
         b.specialAnimTimer = 0.5;
         this._triggerBandSpecial(b);
       }
@@ -3008,7 +3063,7 @@ export class MoshGameEngine {
     ctx.scale(cam.scale, cam.scale);
     ctx.translate(-cam.x, -cam.y);
 
-    if (this.shake > 0) {
+    if (this.shake > 0 && this.screenShakeEnabled) {
       ctx.translate((Math.random() - 0.5) * this.shake * 1.6, (Math.random() - 0.5) * this.shake * 1.6);
     }
 

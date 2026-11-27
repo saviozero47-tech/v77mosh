@@ -41,6 +41,9 @@
         <button id="btn-medley-prev" title="Faixa anterior">⏮</button>
         <button id="btn-medley-next" title="Próximo trecho">⏭</button>
         <button id="btn-medley-mute" title="Mutar/Desmutar">🔊</button>
+        <div class="deck-volume-wrap" title="Volume da música">
+          <input id="deck-volume-slider" class="deck-volume-slider" type="range" min="0" max="100" value="85" aria-label="Volume da música" />
+        </div>
       </div>
     </div>
 
@@ -63,6 +66,7 @@
             <button id="btn-goto-select" class="punk-btn primary-btn">🤘 ENTRAR NO MOSH</button>
             <button id="btn-goto-stages" class="punk-btn secondary-btn">🎸 SETLIST / FASES</button>
             <button id="btn-show-controls" class="punk-btn ghost-btn">⌨️ CONTROLES</button>
+            <button id="btn-open-settings" class="punk-btn ghost-btn">⚙️ CONFIGURAÇÕES</button>
             <button id="btn-cd-vinyl" class="punk-btn secondary-btn hidden">💿 MEU CD VIRTUAL</button>
           </div>
         </div>
@@ -134,6 +138,8 @@
         <div class="stage-picker-mini">
           <label for="select-stage-dropdown">FASE:</label>
           <select id="select-stage-dropdown"></select>
+          <label for="select-difficulty-dropdown">MODO:</label>
+          <select id="select-difficulty-dropdown"></select>
         </div>
       </div>
 
@@ -284,6 +290,7 @@
           <p id="pause-track-info">Tocando agora</p>
           <div class="overlay-actions">
             <button id="btn-resume" class="punk-btn primary-btn">▶ VOLTAR PRO MOSH</button>
+            <button id="btn-pause-settings" class="punk-btn secondary-btn">⚙️ CONFIGURAÇÕES</button>
             <button id="btn-restart-stage" class="punk-btn secondary-btn">🔄 REINICIAR FASE</button>
             <button id="btn-pause-menu" class="punk-btn ghost-btn">🏠 TELA INICIAL</button>
           </div>
@@ -369,6 +376,76 @@
       </div>
       <div class="controls-tip">
         <strong>DICA DE SHOW:</strong> Quando a música entra na parte pesada (<b>MOSH PIT ATIVADO!</b>), toda a plateia pira! Use a <b>Ombrada (L/C)</b> pra jogar inimigos uns nos outros, colete armas brancas no chão e <b>suba no palco lá em cima</b> pra derrubar o Delleiw, Julian, Psayco e Misa!
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="modal-settings" class="modal hidden">
+    <div class="modal-card settings-card">
+      <div class="modal-header">
+        <h2>⚙️ CONFIGURAÇÕES DO SHOW</h2>
+        <button id="btn-close-settings" class="close-x" aria-label="Fechar">✖</button>
+      </div>
+      <div class="settings-list">
+        <div class="settings-section-title">ÁUDIO</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <label for="setting-music-vol">Volume da Música</label>
+            <span class="setting-desc">Medley da tela inicial e músicas das fases</span>
+          </div>
+          <div class="setting-control range-control">
+            <input id="setting-music-vol" class="punk-range" type="range" min="0" max="100" value="85" />
+            <span id="setting-music-val" class="range-val">85%</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <label for="setting-sfx-vol">Volume dos Efeitos (SFX &amp; Vozes)</label>
+            <span class="setting-desc">Golpes, armas, especiais e falas da banda</span>
+          </div>
+          <div class="setting-control range-control">
+            <input id="setting-sfx-vol" class="punk-range" type="range" min="0" max="100" value="100" />
+            <span id="setting-sfx-val" class="range-val">100%</span>
+            <button id="btn-test-sfx" type="button" class="mini-test-btn" title="Testar som de efeito">🔊</button>
+          </div>
+        </div>
+
+        <div class="settings-section-title">VISUAL &amp; JOGABILIDADE</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <label for="setting-crt-fx">Efeitos Retro (Scanlines &amp; Ruído)</label>
+            <span class="setting-desc">Textura punk/xerox e linhas de TV antiga</span>
+          </div>
+          <label class="punk-switch">
+            <input id="setting-crt-fx" type="checkbox" checked />
+            <span class="punk-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <label for="setting-screen-shake">Tremor de Tela (Screen Shake)</label>
+            <span class="setting-desc">Impacto de câmera nos golpes e explosões</span>
+          </div>
+          <label class="punk-switch">
+            <input id="setting-screen-shake" type="checkbox" checked />
+            <span class="punk-slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <label for="setting-touch">Controles Touch na Tela</label>
+            <span class="setting-desc">Joystick e botões virtuais para celular/tablet</span>
+          </div>
+          <label class="punk-switch">
+            <input id="setting-touch" type="checkbox" />
+            <span class="punk-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-footer">
+        <button id="btn-reset-settings" type="button" class="punk-btn ghost-btn small">↺ RESTAURAR PADRÕES</button>
+        <button id="btn-done-settings" type="button" class="punk-btn primary-btn small">✓ FECHAR</button>
       </div>
     </div>
   </div>

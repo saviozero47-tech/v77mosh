@@ -1,5 +1,5 @@
 // Controlador Principal de Telas & UI — VÁLVULA 77: MOSH DE ARMA BRANCA
-import { ALL_CHARACTERS, STAGES, V77_SPOTIFY_URL } from './config.js';
+import { ALL_CHARACTERS, STAGES, DIFFICULTY_MODES, V77_SPOTIFY_URL } from './config.js';
 import { audioEngine } from './audio.js';
 import { preloadAssets, drawFighter, drawPunkHead, IMAGES } from './sprites.js';
 import { MoshGameEngine } from './engine.js';
@@ -22,6 +22,14 @@ const screens = {
 
 let selectedChar = ALL_CHARACTERS[0];
 let selectedStageIdx = 0;
+let selectedDifficulty = (() => {
+  try {
+    const saved = localStorage.getItem('v77_difficulty');
+    return saved && DIFFICULTY_MODES[saved] ? saved : 'punk';
+  } catch {
+    return 'punk';
+  }
+})();
 let currentFilter = 'all';
 let menuAnimId = null;
 let previewTime = 0;
@@ -79,10 +87,8 @@ document.getElementById('btn-boot-start').addEventListener('click', () => {
 // Controles do Cassette Deck na Tela Inicial
 document.getElementById('btn-medley-prev').addEventListener('click', () => audioEngine.prevMenuTrack());
 document.getElementById('btn-medley-next').addEventListener('click', () => audioEngine.nextMenuTrack());
-document.getElementById('btn-medley-mute').addEventListener('click', (e) => {
-  const m = audioEngine.toggleMute();
-  e.target.textContent = m ? '🔇' : '🔊';
-  document.getElementById('btn-game-mute').textContent = m ? '🔇' : '🔊';
+document.getElementById('btn-medley-mute').addEventListener('click', () => {
+  handleMuteToggle();
 });
 
 // Navegação Tela Inicial
@@ -189,6 +195,7 @@ function drawCharPreviewFrame() {
 // ===== SELEÇÃO DE PERSONAGEM =====
 const rosterGrid = document.getElementById('roster-grid');
 const stageDropdown = document.getElementById('select-stage-dropdown');
+const difficultyDropdown = document.getElementById('select-difficulty-dropdown');
 
 STAGES.forEach((st, idx) => {
   const opt = document.createElement('option');
@@ -200,6 +207,24 @@ stageDropdown.addEventListener('change', (e) => {
   selectedStageIdx = Number(e.target.value);
   preloadSelectedStage();
 });
+
+if (difficultyDropdown) {
+  Object.values(DIFFICULTY_MODES).forEach((mode) => {
+    const opt = document.createElement('option');
+    opt.value = mode.id;
+    opt.textContent = mode.label;
+    opt.title = mode.description;
+    difficultyDropdown.appendChild(opt);
+  });
+  difficultyDropdown.value = selectedDifficulty;
+  difficultyDropdown.addEventListener('change', (e) => {
+    const val = e.target.value;
+    selectedDifficulty = DIFFICULTY_MODES[val] ? val : 'punk';
+    try {
+      localStorage.setItem('v77_difficulty', selectedDifficulty);
+    } catch {}
+  });
+}
 
 document.querySelectorAll('.tab-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -277,9 +302,12 @@ function renderStages() {
   STAGES.forEach((st, idx) => {
     const card = document.createElement('div');
     card.className = 'stage-card';
+    const diffLabel = st.difficulty ? st.difficulty.label : 'PADRÃO';
+    const diffColor = st.difficulty ? st.difficulty.color : '#facc15';
     card.innerHTML = `
       <div class="stage-card-head">
         <span class="stage-num">${st.num}</span>
+        <span class="stage-diff-tag" style="border-color: ${diffColor}; color: ${diffColor};">${diffLabel}</span>
         <span class="stage-boss-tag">CHEFE: ${st.mainBoss.toUpperCase()}</span>
       </div>
       <h3>${st.name}</h3>
@@ -383,7 +411,7 @@ function launchSelectedGame() {
   document.getElementById('pause-track-info').textContent = `Tocando: ${stage.name}`;
 
   showScreen('game');
-  engine.startStage(selectedChar, stage);
+  engine.startStage(selectedChar, stage, selectedDifficulty);
 }
 
 document.getElementById('btn-launch-game').addEventListener('click', launchSelectedGame);
@@ -637,6 +665,14 @@ window.addEventListener('keydown', (e) => {
   if (e.target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 
   if (e.code === 'Escape' || e.code === 'KeyP') {
+    if (modalSettings && !modalSettings.classList.contains('hidden')) {
+      closeSettingsModal();
+      return;
+    }
+    if (modalControls && !modalControls.classList.contains('hidden')) {
+      modalControls.classList.add('hidden');
+      return;
+    }
     if (cdModal && !cdModal.classList.contains('hidden')) {
       closeCdModal();
       return;
@@ -656,10 +692,8 @@ window.addEventListener('keydown', (e) => {
 
 document.getElementById('btn-game-pause').addEventListener('click', togglePause);
 document.getElementById('btn-resume').addEventListener('click', togglePause);
-document.getElementById('btn-game-mute').addEventListener('click', (e) => {
-  const m = audioEngine.toggleMute();
-  e.target.textContent = m ? '🔇' : '🔊';
-  document.getElementById('btn-medley-mute').textContent = m ? '🔇' : '🔊';
+document.getElementById('btn-game-mute').addEventListener('click', () => {
+  handleMuteToggle();
 });
 
 // Bloqueia zoom por duplo-toque em mobile (iOS Safari ignora user-scalable=no)
@@ -743,6 +777,9 @@ syncTouchVisibility();
 btnGameTouch.addEventListener('click', () => {
   touchEnabled = !touchEnabled;
   syncTouchVisibility();
+  userSettings.touchControls = touchEnabled;
+  if (settingTouchEl) settingTouchEl.checked = touchEnabled;
+  saveSettings();
 });
 
 // Joystick analógico com suporte multi-touch (Pointer Events)
@@ -807,4 +844,196 @@ document.querySelectorAll('.t-btn').forEach((btn) => {
   btn.addEventListener('pointercancel', release);
   btn.addEventListener('pointerleave', release);
 });
+
+// ===== CONFIGURAÇÕES & REGULADOR DE VOLUME DO PLAYER =====
+const SETTINGS_STORAGE_KEY = 'v77_settings';
+const modalSettings = document.getElementById('modal-settings');
+const deckVolumeSlider = document.getElementById('deck-volume-slider');
+const settingMusicVol = document.getElementById('setting-music-vol');
+const settingMusicVal = document.getElementById('setting-music-val');
+const settingSfxVol = document.getElementById('setting-sfx-vol');
+const settingSfxVal = document.getElementById('setting-sfx-val');
+const settingCrtFx = document.getElementById('setting-crt-fx');
+const settingScreenShake = document.getElementById('setting-screen-shake');
+const settingTouchEl = document.getElementById('setting-touch');
+const btnMedleyMute = document.getElementById('btn-medley-mute');
+const btnGameMute = document.getElementById('btn-game-mute');
+
+function getDefaultSettings() {
+  return {
+    musicVolume: 85,
+    sfxVolume: 100,
+    crtFx: true,
+    screenShake: true,
+    touchControls: isTouchDevice,
+  };
+}
+
+function clampPct(val, fallback) {
+  const n = Number(val);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function loadSettings() {
+  const defaults = getDefaultSettings();
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw);
+    return {
+      musicVolume: clampPct(parsed.musicVolume, defaults.musicVolume),
+      sfxVolume: clampPct(parsed.sfxVolume, defaults.sfxVolume),
+      crtFx: typeof parsed.crtFx === 'boolean' ? parsed.crtFx : defaults.crtFx,
+      screenShake: typeof parsed.screenShake === 'boolean' ? parsed.screenShake : defaults.screenShake,
+      touchControls: typeof parsed.touchControls === 'boolean' ? parsed.touchControls : defaults.touchControls,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+let userSettings = loadSettings();
+
+function saveSettings() {
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(userSettings));
+  } catch {}
+}
+
+function syncMuteIcons() {
+  const deckMuted = audioEngine.muted || userSettings.musicVolume === 0;
+  const gameMuted = audioEngine.muted || (userSettings.musicVolume === 0 && userSettings.sfxVolume === 0);
+  if (btnMedleyMute) btnMedleyMute.textContent = deckMuted ? '🔇' : '🔊';
+  if (btnGameMute) btnGameMute.textContent = gameMuted ? '🔇' : '🔊';
+}
+
+function handleMuteToggle() {
+  if (audioEngine.muted) {
+    audioEngine.setMuted(false);
+    if (userSettings.musicVolume === 0) {
+      updateMusicVolume(85);
+      return;
+    }
+  } else {
+    audioEngine.setMuted(true);
+  }
+  syncMuteIcons();
+}
+
+function updateMusicVolume(pct) {
+  const clamped = clampPct(pct, 85);
+  userSettings.musicVolume = clamped;
+  if (deckVolumeSlider) deckVolumeSlider.value = String(clamped);
+  if (settingMusicVol) settingMusicVol.value = String(clamped);
+  if (settingMusicVal) settingMusicVal.textContent = `${clamped}%`;
+  if (clamped > 0 && audioEngine.muted) {
+    audioEngine.setMuted(false);
+  }
+  audioEngine.setMusicVolume(clamped / 100);
+  syncMuteIcons();
+  saveSettings();
+}
+
+function updateSfxVolume(pct) {
+  const clamped = clampPct(pct, 100);
+  userSettings.sfxVolume = clamped;
+  if (settingSfxVol) settingSfxVol.value = String(clamped);
+  if (settingSfxVal) settingSfxVal.textContent = `${clamped}%`;
+  if (clamped > 0 && audioEngine.muted) {
+    audioEngine.setMuted(false);
+  }
+  audioEngine.setSfxVolume(clamped / 100);
+  syncMuteIcons();
+  saveSettings();
+}
+
+function applySettings() {
+  if (deckVolumeSlider) deckVolumeSlider.value = String(userSettings.musicVolume);
+  if (settingMusicVol) settingMusicVol.value = String(userSettings.musicVolume);
+  if (settingMusicVal) settingMusicVal.textContent = `${userSettings.musicVolume}%`;
+  if (settingSfxVol) settingSfxVol.value = String(userSettings.sfxVolume);
+  if (settingSfxVal) settingSfxVal.textContent = `${userSettings.sfxVolume}%`;
+  if (settingCrtFx) settingCrtFx.checked = userSettings.crtFx;
+  if (settingScreenShake) settingScreenShake.checked = userSettings.screenShake;
+  if (settingTouchEl) settingTouchEl.checked = userSettings.touchControls;
+
+  audioEngine.setMusicVolume(userSettings.musicVolume / 100);
+  audioEngine.setSfxVolume(userSettings.sfxVolume / 100);
+  document.body.classList.toggle('no-crt', !userSettings.crtFx);
+  engine.screenShakeEnabled = userSettings.screenShake;
+  touchEnabled = userSettings.touchControls;
+  syncTouchVisibility();
+  syncMuteIcons();
+}
+
+function openSettingsModal() {
+  if (modalSettings) modalSettings.classList.remove('hidden');
+}
+
+function closeSettingsModal() {
+  if (modalSettings) modalSettings.classList.add('hidden');
+}
+
+document.getElementById('btn-open-settings')?.addEventListener('click', openSettingsModal);
+document.getElementById('btn-pause-settings')?.addEventListener('click', openSettingsModal);
+document.getElementById('btn-close-settings')?.addEventListener('click', closeSettingsModal);
+document.getElementById('btn-done-settings')?.addEventListener('click', closeSettingsModal);
+if (modalSettings) {
+  modalSettings.addEventListener('click', (e) => {
+    if (e.target === modalSettings) closeSettingsModal();
+  });
+}
+
+deckVolumeSlider?.addEventListener('input', (e) => {
+  updateMusicVolume(e.target.value);
+});
+
+settingMusicVol?.addEventListener('input', (e) => {
+  updateMusicVolume(e.target.value);
+});
+
+settingSfxVol?.addEventListener('input', (e) => {
+  updateSfxVolume(e.target.value);
+});
+
+settingSfxVol?.addEventListener('change', () => {
+  if (userSettings.sfxVolume > 0) {
+    audioEngine.init();
+    audioEngine.playSFX('pickup');
+  }
+});
+
+document.getElementById('btn-test-sfx')?.addEventListener('click', () => {
+  audioEngine.init();
+  audioEngine.playSFX('punch');
+});
+
+settingCrtFx?.addEventListener('change', (e) => {
+  userSettings.crtFx = e.target.checked;
+  document.body.classList.toggle('no-crt', !userSettings.crtFx);
+  saveSettings();
+});
+
+settingScreenShake?.addEventListener('change', (e) => {
+  userSettings.screenShake = e.target.checked;
+  engine.screenShakeEnabled = userSettings.screenShake;
+  saveSettings();
+});
+
+settingTouchEl?.addEventListener('change', (e) => {
+  userSettings.touchControls = e.target.checked;
+  touchEnabled = userSettings.touchControls;
+  syncTouchVisibility();
+  saveSettings();
+});
+
+document.getElementById('btn-reset-settings')?.addEventListener('click', () => {
+  userSettings = getDefaultSettings();
+  audioEngine.setMuted(false);
+  applySettings();
+  saveSettings();
+});
+
+applySettings();
 
