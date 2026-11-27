@@ -76,22 +76,25 @@ class V77AudioEngine {
     this._stageLoopStart = 0;
 
     this.menuAudio.addEventListener('timeupdate', () => this._handleMenuTimeUpdate());
+    this._pendingMenuResume = false;
+    this._pendingStemResume = false;
+    this.menuAudio.addEventListener('play', () => { this._pendingMenuResume = false; });
     this.menuAudio.addEventListener('ended', () => {
       if (this.mode === 'menu') {
         this.nextMenuTrack();
       } else if (this.mode === 'secret') {
         this.menuAudio.currentTime = this._secretStart || 12.0;
         this.menuAudio.playbackRate = 1.16;
-        this.menuAudio.play().catch(() => {});
+        const _p = this.menuAudio.play(); if (_p && _p.catch) _p.catch(() => { this._pendingMenuResume = true; });
       } else if (this.mode === 'hell') {
         // Toca até o fim sem corte prematuro; se o jogador ainda não selou os portais,
         // volta para o clímax (2:05) e mantém o pico do inferno até a vitória.
         this.menuAudio.currentTime = 125.0;
         this.menuAudio.playbackRate = 1.0;
-        this.menuAudio.play().catch(() => {});
+        const _p2 = this.menuAudio.play(); if (_p2 && _p2.catch) _p2.catch(() => { this._pendingMenuResume = true; });
       } else if (this.mode === 'stage' && !this.usingStems) {
         this.menuAudio.currentTime = this._stageLoopStart || 0;
-        this.menuAudio.play().catch(() => {});
+        const _p3 = this.menuAudio.play(); if (_p3 && _p3.catch) _p3.catch(() => { this._pendingMenuResume = true; });
       }
     });
 
@@ -105,6 +108,7 @@ class V77AudioEngine {
       if (!this.ctx) return;
       if (!this._isPaused && this.mode !== 'idle' && this.mode !== 'stopped') {
         this._ensureContextRunning();
+        this._retryPendingPlayback();
       }
     };
 
@@ -125,6 +129,24 @@ class V77AudioEngine {
     if (!this.ctx) return;
     if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
       this.ctx.resume().catch(() => {});
+    }
+  }
+
+  _retryPendingPlayback() {
+    if (this._isPaused || this.muted) return;
+    this._ensureContextRunning();
+    if (this.mode === 'stage' && this.usingStems) {
+      if (this._pendingStemResume && this._activePack && !this._stemPlaying) {
+        this._startStemNodes(this._activePack, this._pausedSongTime ?? this._stageLoopStart);
+        this._pendingStemResume = false;
+      }
+      return;
+    }
+    if ((this.mode === 'menu' || this.mode === 'secret' || this.mode === 'stage' || this.mode === 'hell') && this._pendingMenuResume) {
+      const p = this.menuAudio.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => { this._pendingMenuResume = true; });
+      }
     }
   }
 
@@ -599,7 +621,8 @@ class V77AudioEngine {
       applySeekAndRate();
       unmuteMenuSmooth();
       if (!this._isPaused && isValidMenuPlayback()) {
-        this.menuAudio.play().catch(() => {});
+        const p = this.menuAudio.play();
+        if (p && typeof p.catch === 'function') p.catch(() => { this._pendingMenuResume = true; });
       }
       return;
     }
@@ -634,7 +657,8 @@ class V77AudioEngine {
         applySeekAndRate();
         unmuteMenuSmooth();
         if (!this._isPaused) {
-          this.menuAudio.play().catch(() => {});
+          const p = this.menuAudio.play();
+          if (p && typeof p.catch === 'function') p.catch(() => { this._pendingMenuResume = true; });
         }
       }
       cleanup();
@@ -664,7 +688,8 @@ class V77AudioEngine {
     } catch (_) {}
     if (!this._isPaused && isValidMenuPlayback()) {
       // Dispara play dentro do gesto de toque para desbloquear HTMLMediaElement no iOS Safari
-      this.menuAudio.play().catch(() => {});
+      const p = this.menuAudio.play();
+      if (p && typeof p.catch === 'function') p.catch(() => { this._pendingMenuResume = true; });
     }
   }
 
@@ -824,7 +849,7 @@ class V77AudioEngine {
         this.menuGain.gain.setValueAtTime(1.0, now);
         this._secretLoopFading = false;
       }
-      this.menuAudio.play().catch(() => {});
+      { const _pr = this.menuAudio.play(); if (_pr && _pr.catch) _pr.catch(() => { this._pendingMenuResume = true; }); }
     }
   }
 

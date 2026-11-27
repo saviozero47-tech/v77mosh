@@ -308,9 +308,11 @@ export class MoshGameEngine {
 
     const halfW = cam.viewW / 2;
     const halfH = cam.viewH / 2;
+    // Quando no palco, empurra a câmera para baixo para o HUD não cobrir o jogador
+    const onStageBias = p.onStage ? Math.min(90, 70 / Math.max(0.5, cam.scale)) : 0;
     return {
       x: Math.max(halfW, Math.min(W - halfW, p.x)),
-      y: Math.max(halfH, Math.min(H - halfH, p.y - 60)),
+      y: Math.max(halfH, Math.min(H - halfH, p.y - 60 + onStageBias)),
     };
   }
 

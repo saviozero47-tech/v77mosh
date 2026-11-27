@@ -662,6 +662,22 @@ document.getElementById('btn-game-mute').addEventListener('click', (e) => {
   document.getElementById('btn-medley-mute').textContent = m ? '🔇' : '🔊';
 });
 
+// Bloqueia zoom por duplo-toque em mobile (iOS Safari ignora user-scalable=no)
+document.addEventListener('dblclick', (e) => {
+  e.preventDefault();
+}, { passive: false });
+let _lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - _lastTouchEnd <= 300) {
+    e.preventDefault();
+  }
+  _lastTouchEnd = now;
+}, { passive: false });
+document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+
 // Gatilho secreto no celular e acesso ao CD Virtual
 if (secretBtn) {
   secretBtn.addEventListener('click', () => {

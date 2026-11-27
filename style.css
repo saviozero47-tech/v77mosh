@@ -26,6 +26,9 @@ html, body {
   background: var(--bg);
   color: var(--bone);
   font-family: 'JetBrains Mono', monospace;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
 }
 
 /* Gritty xerox / punk flyer overlays */
