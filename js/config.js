@@ -307,6 +307,35 @@ export const WEAPONS = {
     spin: false,
     continuous: true,
   },
+  valvula: {
+    id: 'valvula',
+    name: 'VÁLVULA PRETA',
+    icon: '⚙️',
+    damage: 150,
+    range: 9999,
+    knockback: 620,
+    durability: Infinity,
+    speedMul: 1.0,
+    color: '#ef4444',
+    spin: true,
+    isSpecialWeapon: true,
+    projectile: 'valve',
+  },
+  metralhadora: {
+    id: 'metralhadora',
+    name: 'METRALHADORA V77',
+    icon: '🔫',
+    damage: 13,
+    range: 780,
+    knockback: 85,
+    durability: Infinity,
+    speedMul: 1.0,
+    color: '#f97316',
+    spin: false,
+    isSpecialWeapon: true,
+    continuous: true,
+    projectile: 'bullet',
+  },
 };
 
 // 4 Fases sincronizadas com stems reais (vocals, guitar, bass, drums)
@@ -377,3 +406,48 @@ export const STAGES = [
     description: 'O clímax absoluto! Ratos de terno invadem o show junto com o mosh até "800 mil pra comprar fuzil". Derrube o Misa da bateria e encerre tudo!',
   },
 ];
+
+// URL oficial da banda — prêmio do CD Virtual do EXPURGÁTORIO
+export const V77_SPOTIFY_URL =
+  'https://open.spotify.com/intl-pt/artist/2mKWtKRH6jPWFnvj4ewy5i?si=dm5UI4ZRQEmbDvPGE_czJg';
+
+// Fase Secreta EXPURGÁTORIO — sincronizada com a música "Expurgatório" (3:03)
+export const HELL_STAGE_CONFIG = {
+  name: 'EXPURGÁTORIO',
+  songSrc: 'MUSICAS SHOW/Expurgatorio.mp3',
+  songDuration: 183,
+  palette: { wall: '#1a0302', floor: '#1c0402', stage: '#300603', accent: '#ff2a00', spot1: '#ff4400', spot2: '#cc0000' },
+  // Fases da música: intro vazia, entrada do vocal, quebra e pico do inferno
+  phases: [
+    { id: 0, start: 0, end: 28, label: 'INTRO • O ABISMO SE ABRE', spawnEvery: 0, maxEnemies: 0, demonHp: 0, demonSpeed: 0 },
+    { id: 1, start: 28, end: 96, label: 'O VOCAL CHEGA • DEMÔNIOS INVADEM', spawnEvery: 1.7, maxEnemies: 8, demonHp: 66, demonSpeed: 128 },
+    { id: 2, start: 96, end: 125, label: 'CRESCENDO • O INFERNO ACELERA', spawnEvery: 1.0, maxEnemies: 13, demonHp: 88, demonSpeed: 158 },
+    { id: 3, start: 125, end: 999, label: 'PICO DO INFERNO • SELE AS 3 FISSURAS!', spawnEvery: 0.42, maxEnemies: 22, demonHp: 105, demonSpeed: 185 },
+  ],
+  portalCount: 3,
+  portalPositions: [
+    { x: 300, y: 545 },
+    { x: 640, y: 615 },
+    { x: 980, y: 545 },
+  ],
+  portalSpawnEvery: 0.85,
+
+  // Guardiões: a fissura fica protegida até todos caírem
+  guardianPerPortal: 2,
+  guardianRespawnCount: 1,
+  guardianHpMult: 1.5,
+  guardianSpeedMult: 1.05,
+  guardianLeash: 190,
+  portalOpenWindow: 7, // segundos de vulnerabilidade após derrubar os guardiões
+
+  // Fogo telegrafado das fissuras abertas
+  fireIntervalMin: 3.6,
+  fireIntervalMax: 5.0,
+  fireTelegraph: 0.6,
+  fireSpeed: 300,
+  fireDamage: 14,
+
+  // Mira da Válvula Preta: só fixa o alvo dentro de um cone à frente
+  aimConeCos: Math.cos((40 * Math.PI) / 180),
+  targetLockDuration: 3,
+};

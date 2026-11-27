@@ -63,6 +63,7 @@
             <button id="btn-goto-select" class="punk-btn primary-btn">🤘 ENTRAR NO MOSH</button>
             <button id="btn-goto-stages" class="punk-btn secondary-btn">🎸 SETLIST / FASES</button>
             <button id="btn-show-controls" class="punk-btn ghost-btn">⌨️ CONTROLES</button>
+            <button id="btn-cd-vinyl" class="punk-btn secondary-btn hidden">💿 MEU CD VIRTUAL</button>
           </div>
         </div>
       </header>
@@ -228,17 +229,17 @@
             <button id="btn-game-pause" class="mini-hud-btn" title="Pausar (ESC)">⏸</button>
           </div>
         </div>
-      </div>
 
-      <!-- Boss Bar (appears when fighting a band member!) -->
-      <div id="boss-hud" class="boss-hud hidden">
-        <img id="boss-hud-img" src="" alt="" />
-        <div class="boss-hud-info">
-          <div class="boss-hud-title">
-            <span id="boss-hud-name">DELLEIW — BAIXISTA</span>
-            <span id="boss-hud-sub">CHEFE NO PALCO</span>
+        <!-- Boss Bar (2ª linha do HUD: nunca cobre a vida do jogador) -->
+        <div id="boss-hud" class="boss-hud hidden">
+          <img id="boss-hud-img" src="" alt="" />
+          <div class="boss-hud-info">
+            <div class="boss-hud-title">
+              <span id="boss-hud-name">DELLEIW — BAIXISTA</span>
+              <span id="boss-hud-sub">CHEFE NO PALCO</span>
+            </div>
+            <div class="boss-hp-track"><div id="boss-hp-fill" class="boss-hp-fill"></div></div>
           </div>
-          <div class="boss-hp-track"><div id="boss-hp-fill" class="boss-hp-fill"></div></div>
         </div>
       </div>
 
@@ -262,6 +263,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Botão secreto V77 🔥 (discreto: aparece só após permanecer perto da bateria com a foice) -->
+      <button id="btn-secret-v77" class="btn-secret-v77 hidden" type="button" aria-label="Ativar Fase Secreta V77">🔥 V77</button>
 
       <!-- Bottom Quick Controls Hint -->
       <div class="hud-bottom-hint">
@@ -365,6 +369,29 @@
       </div>
       <div class="controls-tip">
         <strong>DICA DE SHOW:</strong> Quando a música entra na parte pesada (<b>MOSH PIT ATIVADO!</b>), toda a plateia pira! Use a <b>Ombrada (L/C)</b> pra jogar inimigos uns nos outros, colete armas brancas no chão e <b>suba no palco lá em cima</b> pra derrubar o Delleiw, Julian, Psayco e Misa!
+      </div>
+    </div>
+  </div>
+
+  <!-- CD VIRTUAL — prêmio da Fase Secreta EXPURGÁTORIO -->
+  <div id="modal-vinyl" class="modal hidden">
+    <div class="modal-card vinyl-card">
+      <div class="modal-header">
+        <h2>💿 CD VIRTUAL — EDIÇÃO SECRETA EXPURGATÓRIO</h2>
+        <button id="btn-close-vinyl" class="close-x" aria-label="Fechar">✖</button>
+      </div>
+      <div class="vinyl-layout">
+        <div class="cd-disc">
+          <div class="cd-hole"></div>
+          <span class="cd-label">V77</span>
+          <span class="cd-ring">EXPURGATÓRIO • EDIÇÃO SECRETA</span>
+        </div>
+        <div class="vinyl-info">
+          <p class="vinyl-kicker">DESBLOQUEADO AO EXPURGAR O INFERNO</p>
+          <h3>VÁLVULA 77 — EXPURGATÓRIO</h3>
+          <p>Você sobreviveu ao pico, selou as três fissuras e garantiu o CD Virtual da banda. Toca o inferno onde quiser!</p>
+          <a id="vinyl-spotify-link" class="punk-btn primary-btn spotify-btn" href="https://open.spotify.com/intl-pt/artist/2mKWtKRH6jPWFnvj4ewy5i?si=dm5UI4ZRQEmbDvPGE_czJg" target="_blank" rel="noopener noreferrer">🎧 OUÇA A VÁLVULA 77 NO SPOTIFY</a>
+        </div>
       </div>
     </div>
   </div>

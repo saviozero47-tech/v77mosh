@@ -1,5 +1,5 @@
 // Motor de Áudio Válvula 77 — Stems Sincronizadas Sample-Accurate (Web Audio API) + Medleys + Falas Game Over
-import { MENU_MEDLEY } from './config.js';
+import { MENU_MEDLEY, HELL_STAGE_CONFIG } from './config.js';
 
 const STEM_NAMES = ['vocal', 'guitar', 'bass', 'drums'];
 const STEM_FILES = {
@@ -63,7 +63,7 @@ class V77AudioEngine {
     this.voiceAudio.playsInline = true;
 
     this.muted = false;
-    this.mode = 'idle'; // 'menu' | 'stage' | 'secret' | 'stopped' | 'idle'
+    this.mode = 'idle'; // 'menu' | 'stage' | 'secret' | 'hell' | 'stopped' | 'idle'
     this.medleyIndex = 0;
     this.onTrackChange = null;
 
@@ -82,6 +82,12 @@ class V77AudioEngine {
       } else if (this.mode === 'secret') {
         this.menuAudio.currentTime = this._secretStart || 12.0;
         this.menuAudio.playbackRate = 1.16;
+        this.menuAudio.play().catch(() => {});
+      } else if (this.mode === 'hell') {
+        // Toca até o fim sem corte prematuro; se o jogador ainda não selou os portais,
+        // volta para o clímax (2:05) e mantém o pico do inferno até a vitória.
+        this.menuAudio.currentTime = 125.0;
+        this.menuAudio.playbackRate = 1.0;
         this.menuAudio.play().catch(() => {});
       } else if (this.mode === 'stage' && !this.usingStems) {
         this.menuAudio.currentTime = this._stageLoopStart || 0;
@@ -558,7 +564,10 @@ class V77AudioEngine {
     const playToken = ++this._menuPlayToken;
     const isValidMenuPlayback = () =>
       playToken === this._menuPlayToken &&
-      (this.mode === 'menu' || this.mode === 'secret' || (this.mode === 'stage' && !this.usingStems));
+      (this.mode === 'menu' ||
+        this.mode === 'secret' ||
+        this.mode === 'hell' ||
+        (this.mode === 'stage' && !this.usingStems));
 
     const encodedSrc = src.split('/').map(encodeURIComponent).join('/');
     const sameFile = this.menuAudio.dataset.rawSrc === src && !!this.menuAudio.getAttribute('src');
@@ -668,10 +677,30 @@ class V77AudioEngine {
     this.usingStems = false;
     this.mode = 'secret';
     this._isPaused = false;
-    this._secretStart = 12.0;
-    this._secretEnd = 43.5;
-    this._playMenuAt('MUSICAS SHOW/Capacete de Nazista é Martelo.mp3', this._secretStart, 1.16);
+    this._secretStart = 0;
+    this._secretEnd = 0;
+    this._secretLoopFading = false;
+    this._playMenuAt('MUSICAS SHOW/Capacete de Nazista é Martelo.mp3', 0, 1.16);
     if (this.onTrackChange) this.onTrackChange('SALA SECRETA 77 — CAPACETE DE NAZISTA É MARTELO (TURBO)');
+  }
+
+  // Fase Secreta EXPURGÁTORIO — faixa completa, do 0:00 ao fim, sem cortes
+  startHellStageTrack() {
+    this.init();
+    this.stopVoiceClip();
+    this._stemLoadToken++;
+    this._setStemsLoading(false);
+    this._stopStemNodes();
+    this._stopMenuAudio();
+    this.usingStems = false;
+    this.mode = 'hell';
+    this._isPaused = false;
+    this._stageMoshWindows = HELL_STAGE_CONFIG.phases
+      .filter((phase) => phase.id > 0)
+      .map((phase) => [phase.start, phase.end === 999 ? 999 : phase.end]);
+    this._stageLoopStart = 0;
+    this._playMenuAt(HELL_STAGE_CONFIG.songSrc, 0, 1.0);
+    if (this.onTrackChange) this.onTrackChange('FASE SECRETA — EXPURGÁTORIO (INFERNO)');
   }
 
   exitSecretRoomTrack(stage, resumeTime = 0) {
@@ -728,10 +757,43 @@ class V77AudioEngine {
         this.nextMenuTrack();
       }
     } else if (this.mode === 'secret') {
-      if (this.menuAudio.currentTime >= (this._secretEnd || 43.5)) {
-        this.menuAudio.currentTime = this._secretStart || 12.0;
-        this.menuAudio.playbackRate = 1.16;
-        this.menuAudio.play().catch(() => {});
+      this._handleSecretLoop();
+    }
+  }
+
+  _handleSecretLoop() {
+    const audio = this.menuAudio;
+    const dur = audio.duration;
+    if (!Number.isFinite(dur) || dur <= 0) return;
+
+    const fadeWindow = 0.18;
+    const loopAt = Math.max(0, dur - fadeWindow);
+    const current = audio.currentTime || 0;
+
+    if (!this._secretLoopFading && current >= loopAt) {
+      this._secretLoopFading = true;
+      if (this.menuGain && this.ctx) {
+        const now = this.ctx.currentTime;
+        this.menuGain.gain.cancelScheduledValues(now);
+        this.menuGain.gain.setValueAtTime(Math.max(0.001, this.menuGain.gain.value), now);
+        this.menuGain.gain.linearRampToValueAtTime(0.001, now + Math.max(0.05, dur - current));
+      }
+    }
+
+    if (current >= dur - 0.04) {
+      this._secretLoopFading = false;
+      try {
+        audio.currentTime = 0;
+        audio.playbackRate = 1.16;
+      } catch (_) {}
+      if (this.menuGain && this.ctx) {
+        const now = this.ctx.currentTime;
+        this.menuGain.gain.cancelScheduledValues(now);
+        this.menuGain.gain.setValueAtTime(0.001, now);
+        this.menuGain.gain.linearRampToValueAtTime(1.0, now + 0.06);
+      }
+      if (!this._isPaused) {
+        audio.play().catch(() => {});
       }
     }
   }
@@ -755,7 +817,13 @@ class V77AudioEngine {
       if (this._activePack && !this._stemPlaying) {
         this._startStemNodes(this._activePack, this._pausedSongTime ?? this._stageLoopStart);
       }
-    } else if (this.mode === 'menu' || this.mode === 'secret' || this.mode === 'stage') {
+    } else if (this.mode === 'menu' || this.mode === 'secret' || this.mode === 'stage' || this.mode === 'hell') {
+      if (this.mode === 'secret' && this.menuGain && this.ctx) {
+        const now = this.ctx.currentTime;
+        this.menuGain.gain.cancelScheduledValues(now);
+        this.menuGain.gain.setValueAtTime(1.0, now);
+        this._secretLoopFading = false;
+      }
       this.menuAudio.play().catch(() => {});
     }
   }
@@ -812,7 +880,10 @@ class V77AudioEngine {
       }
     }
     const isAggressive =
-      this.mode === 'secret' || inWindow || (this.overallEnergy > 0.44 && this.bassEnergy > 0.58);
+      this.mode === 'hell' ||
+      this.mode === 'secret' ||
+      inWindow ||
+      (this.overallEnergy > 0.44 && this.bassEnergy > 0.58);
 
     return {
       bass: this.bassEnergy,
@@ -1038,6 +1109,79 @@ class V77AudioEngine {
       osc2.start(now);
       osc.stop(now + 0.6);
       osc2.stop(now + 0.6);
+    } else if (type === 'machinegun') {
+      // Rajada seca e metálica da Metralhadora V77
+      const bufSize = Math.floor(this.ctx.sampleRate * 0.07);
+      const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.28));
+      }
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buf;
+      const filt = this.ctx.createBiquadFilter();
+      filt.type = 'highpass';
+      filt.frequency.value = 900;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.22, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+      noise.connect(filt);
+      filt.connect(g);
+      g.connect(this.ctx.destination);
+      noise.start(now);
+    } else if (type === 'valveThrow') {
+      // Metal pesado girando + estouro de vapor infernal
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(760, now);
+      osc.frequency.exponentialRampToValueAtTime(70, now + 0.34);
+      g.gain.setValueAtTime(0.3, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+      osc.connect(g);
+      g.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.37);
+
+      const bufSize = Math.floor(this.ctx.sampleRate * 0.3);
+      const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.24));
+      }
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buf;
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(2400, now);
+      lp.frequency.exponentialRampToValueAtTime(180, now + 0.3);
+      const ng = this.ctx.createGain();
+      ng.gain.setValueAtTime(0.34, now);
+      ng.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      noise.connect(lp);
+      lp.connect(ng);
+      ng.connect(this.ctx.destination);
+      noise.start(now);
+    } else if (type === 'hellEnter') {
+      // Trovão / sub-grave dramático de descida ao inferno
+      const osc = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'sine';
+      osc2.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.exponentialRampToValueAtTime(28, now + 0.9);
+      osc2.frequency.setValueAtTime(68, now);
+      osc2.frequency.exponentialRampToValueAtTime(22, now + 0.85);
+      g.gain.setValueAtTime(0.5, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
+      osc.connect(g);
+      osc2.connect(g);
+      g.connect(this.ctx.destination);
+      osc.start(now);
+      osc2.start(now);
+      osc.stop(now + 0.96);
+      osc2.stop(now + 0.96);
     }
   }
 }

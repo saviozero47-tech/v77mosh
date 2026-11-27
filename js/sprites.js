@@ -82,6 +82,35 @@ export function getHitlerAvatarDataUrl(isCrying = false) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+// Avatar SVG inline para a barra do Chefe Mussolini no HUD do Bunker 77
+export function getMussoliniAvatarDataUrl(isCrying = false) {
+  const tears = isCrying
+    ? `<path d="M25 36 Q12 44 10 60" stroke="#38bdf8" stroke-width="5" fill="none" stroke-linecap="round"/>
+       <path d="M45 36 Q58 44 60 60" stroke="#38bdf8" stroke-width="5" fill="none" stroke-linecap="round"/>
+       <circle cx="14" cy="54" r="3" fill="#bae6fd"/><circle cx="56" cy="54" r="3" fill="#bae6fd"/>
+       <ellipse cx="35" cy="55" rx="11" ry="7" fill="#991b1b" stroke="#09090b" stroke-width="2"/>`
+    : `<path d="M17 53 Q35 57 53 53 L52 57 Q35 61 18 57 Z" fill="#18181b"/>`;
+  const eyes = isCrying
+    ? `<path d="M22 33 L29 36 L22 39" stroke="#09090b" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+       <path d="M48 33 L41 36 L48 39" stroke="#09090b" stroke-width="2.8" fill="none" stroke-linecap="round"/>`
+    : `<circle cx="26" cy="35" r="3.6" fill="#09090b"/><circle cx="44" cy="35" r="3.6" fill="#09090b"/>
+       <path d="M19 28 Q26 24 32 28" stroke="#09090b" stroke-width="2.8" fill="none"/>
+       <path d="M38 28 Q44 24 51 28" stroke="#09090b" stroke-width="2.8" fill="none"/>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 70">
+    <rect width="70" height="70" rx="8" fill="#1c1917"/>
+    <path d="M16 40 Q16 18 35 16 Q54 18 54 40 Q54 58 35 60 Q16 58 16 40 Z" fill="#d29a70" stroke="#09090b" stroke-width="3"/>
+    <path d="M14 30 Q18 13 35 13 Q52 13 56 30 Q48 24 35 24 Q22 24 14 30 Z" fill="#1a1410" stroke="#09090b" stroke-width="2"/>
+    <rect x="11" y="30" width="6" height="12" rx="2" fill="#1a1410"/>
+    <rect x="53" y="30" width="6" height="12" rx="2" fill="#1a1410"/>
+    ${eyes}
+    ${tears}
+    <!-- Mussolini sem bigode -->
+    <path d="M16 63 L35 56 L54 63 L54 70 L16 70 Z" fill="#111111" stroke="#09090b" stroke-width="2"/>
+    <path d="M35 56 L35 70" stroke="#7f1d1d" stroke-width="3"/>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 // Desenha um rosto estilizado (Válvuletes, Válvulovers, Alternativo Nyx, Skinhead, Nazi, Hitler ou Rato de Terno)
 export function drawPunkHead(ctx, x, y, r, visual, facing = 1, expression = 'angry', time = 0) {
   visual = visual || { skin: '#e7b89c', hairStyle: 'bald', hairColor: '#111' };
@@ -142,6 +171,64 @@ export function drawPunkHead(ctx, x, y, r, visual, facing = 1, expression = 'ang
     ctx.fillStyle = '#facc15';
     ctx.fillRect(r * 0.58, r * 0.25, r * 0.16, r * 0.24);
     ctx.fillRect(r * 0.78, r * 0.25, r * 0.16, r * 0.2);
+
+    ctx.restore();
+    return;
+  }
+
+  // Demônio do EXPURGÁTORIO: pele carvão/vermelha, chifres e olhos em brasa
+  if (visual.isDemon) {
+    ctx.fillStyle = '#2a0808';
+    ctx.strokeStyle = '#09090b';
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Chifres curvados
+    ctx.fillStyle = '#571010';
+    for (const side of [-1, 1]) {
+      ctx.save();
+      ctx.translate(side * r * 0.6, -r * 0.62);
+      ctx.rotate(side * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.24, r * 0.12);
+      ctx.quadraticCurveTo(-r * 0.2, -r * 1.25, r * 0.42, -r * 1.35);
+      ctx.quadraticCurveTo(r * 0.12, -r * 0.82, r * 0.22, r * 0.1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Olhos amarelos/vermelhos brilhantes
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.ellipse(r * 0.28, -r * 0.14, r * 0.2, r * 0.13, -0.12, 0, Math.PI * 2);
+    ctx.ellipse(-r * 0.32, -r * 0.14, r * 0.16, r * 0.12, 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ff2a00';
+    ctx.beginPath();
+    ctx.arc(r * 0.3, -r * 0.14, r * 0.07, 0, Math.PI * 2);
+    ctx.arc(-r * 0.33, -r * 0.14, r * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Boca com presas
+    ctx.fillStyle = '#09090b';
+    ctx.beginPath();
+    ctx.ellipse(r * 0.05, r * 0.42, r * 0.4, r * 0.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f4f1ea';
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.18, r * 0.34);
+    ctx.lineTo(-r * 0.06, r * 0.63);
+    ctx.lineTo(r * 0.02, r * 0.35);
+    ctx.moveTo(r * 0.16, r * 0.34);
+    ctx.lineTo(r * 0.26, r * 0.6);
+    ctx.lineTo(r * 0.34, r * 0.36);
+    ctx.closePath();
+    ctx.fill();
 
     ctx.restore();
     return;
@@ -306,10 +393,29 @@ export function drawPunkHead(ctx, x, y, r, visual, facing = 1, expression = 'ang
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    // Brilho de brilhantina no topete
     ctx.fillStyle = 'rgba(255,255,255,0.24)';
     ctx.beginPath();
     ctx.ellipse(-r * 0.12, -r * 0.68, r * 0.44, r * 0.12, -0.18, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (visual.hairStyle === 'mussolini') {
+    // Mussolini: calvície no topo com laterais escuras bem marcadas
+    ctx.fillStyle = visual.hairColor || '#1a1410';
+    ctx.strokeStyle = '#09090b';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.05, r * 1.02, Math.PI * 1.02, Math.PI * 1.98);
+    ctx.quadraticCurveTo(r * 0.55, -r * 0.55, 0, -r * 0.62);
+    ctx.quadraticCurveTo(-r * 0.55, -r * 0.55, -r * 1.02, -r * 0.05);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Laterais mais cheias
+    ctx.fillRect(-r * 0.98, -r * 0.05, r * 0.28, r * 0.42);
+    ctx.fillRect(r * 0.70, -r * 0.05, r * 0.28, r * 0.42);
+    // Brilho do topo careca
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.05, -r * 0.58, r * 0.38, r * 0.14, -0.08, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -605,6 +711,49 @@ export function drawWeaponShape(ctx, weaponId, scale = 1) {
     ctx.beginPath();
     ctx.arc(46.5, -0.5, 2.2, 0, Math.PI * 2);
     ctx.fill();
+  } else if (weaponId === 'valvula') {
+    // Roda de válvula industrial preta com 4 raios e centro vermelho
+    ctx.fillStyle = '#09090b';
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(14, 0, 19, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#3f3f46';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2;
+      ctx.moveTo(14, 0);
+      ctx.lineTo(14 + Math.cos(a) * 16, Math.sin(a) * 16);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(14, 0, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  } else if (weaponId === 'metralhadora') {
+    // Metralhadora pesada preta com cano, pente e coronha
+    ctx.fillStyle = '#111116';
+    ctx.strokeStyle = '#09090b';
+    ctx.lineWidth = 2.2;
+    ctx.fillRect(-12, -7, 34, 14);
+    ctx.strokeRect(-12, -7, 34, 14);
+    ctx.fillStyle = '#27272a';
+    ctx.fillRect(-18, -4, 12, 9);
+    ctx.strokeRect(-18, -4, 12, 9);
+    ctx.fillStyle = '#3f3f46';
+    ctx.fillRect(22, -3.5, 32, 7);
+    ctx.strokeRect(22, -3.5, 32, 7);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(4, 7, 12, 14);
+    ctx.strokeRect(4, 7, 12, 14);
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(28, -2, 22, 4);
   }
 
   ctx.restore();
@@ -619,6 +768,17 @@ export function drawFighter(ctx, f, time) {
   ctx.beginPath();
   ctx.ellipse(f.x, f.y, 26 * shadowScale, 10 * shadowScale, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  if (f.isPortalGuardian && f.state !== 'ko') {
+    ctx.save();
+    ctx.strokeStyle = '#fb923c';
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.75 + Math.sin(time * 8 + (f.animSeed || 0)) * 0.2;
+    ctx.beginPath();
+    ctx.ellipse(f.x, f.y, 34 * shadowScale, 13 * shadowScale, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   ctx.translate(f.x, f.y - f.z);
 
@@ -653,7 +813,14 @@ export function drawFighter(ctx, f, time) {
   let spikes = true;
 
   if (f.bandId) {
-    if (f.bandId === 'psayco') {
+    if (f.hellMode) {
+      // EXPURGÁTORIO: banda inteira de preto com detalhes vermelhos
+      jacket = '#09090b';
+      shirt = f.bandId === 'psayco' ? '#111116' : '#7f0000';
+      pants = '#09090b';
+      boots = '#050505';
+      spikes = f.bandId !== 'psayco';
+    } else if (f.bandId === 'psayco') {
       jacket = '#266185';
       shirt = '#1e3a5f';
       pants = '#111827';
@@ -683,6 +850,14 @@ export function drawFighter(ctx, f, time) {
     boots = f.visual.boots;
     skin = f.visual.skin;
     spikes = f.visual.spikes;
+    if (f.visual.isDemon) {
+      jacket = '#1a0505';
+      shirt = '#7f1d1d';
+      pants = '#120303';
+      boots = '#09090b';
+      spikes = false;
+      skin = '#571010';
+    }
   }
 
   if (f.specialAnimTimer > 0) {
@@ -729,13 +904,48 @@ export function drawFighter(ctx, f, time) {
   // === TRONCO ===
   ctx.save();
   const isHitlerCrying = f.isHitler && f.state !== 'ko' && (f.cryingTimer > 0 || f.hurtTimer > 0);
-  const trembleX = isHitlerCrying ? Math.sin(time * 62) * 2.6 : 0;
+  const isMussoliniCrying = f.isMussolini && f.state !== 'ko' && (f.cryingTimer > 0 || f.hurtTimer > 0);
+  const trembleX = (isHitlerCrying || isMussoliniCrying) ? Math.sin(time * 62) * 2.6 : 0;
   ctx.translate(trembleX, -36 - bounce);
   ctx.fillStyle = jacket;
   ctx.beginPath();
   ctx.roundRect(-18, -36, 36, 38, 6);
   ctx.fill();
   ctx.stroke();
+
+  if (f.hellMode && f.bandId === 'psayco') {
+    // Sobretudo preto longo (cobre torso e pernas), gola alta e detalhes vermelhos
+    ctx.fillStyle = '#09090b';
+    ctx.fillRect(-19, -37, 38, 64);
+    ctx.fillStyle = '#1c1c1c';
+    ctx.fillRect(-8, -38, 16, 62);
+    ctx.fillStyle = '#cc0000';
+    ctx.fillRect(-19, -37, 38, 5);
+    ctx.fillRect(-19, 14, 38, 4);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(-11, -41, 22, 7);
+  } else if (f.hellMode && f.bandId) {
+    ctx.fillStyle = '#cc0000';
+    ctx.fillRect(-18, -36, 5, 38);
+    ctx.fillRect(13, -36, 5, 38);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(-16, -9, 32, 4);
+  } else if (f.visual?.isDemon) {
+    // Costelas em brasa e brilho carmesim no peito do demônio
+    ctx.strokeStyle = '#b91c1c';
+    ctx.lineWidth = 2;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-12, -28 + i * 9);
+      ctx.lineTo(0, -24 + i * 9);
+      ctx.lineTo(12, -28 + i * 9);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255, 60, 0, 0.35)';
+    ctx.beginPath();
+    ctx.arc(0, -12, 9 + Math.sin(time * 7 + f.animSeed) * 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   if (f.visual?.isRatSuit) {
     // Camisa branca + Gravata vermelha de político corrupto!
@@ -764,7 +974,6 @@ export function drawFighter(ctx, f, time) {
     ctx.lineTo(0, -15);
     ctx.closePath();
     ctx.fill();
-    // Gravata preta
     ctx.fillStyle = '#09090b';
     ctx.beginPath();
     ctx.moveTo(-2.5, -34);
@@ -774,7 +983,6 @@ export function drawFighter(ctx, f, time) {
     ctx.lineTo(-3.5, -16);
     ctx.closePath();
     ctx.fill();
-    // Alça diagonal militar (Sam Browne) + Cinto
     ctx.strokeStyle = '#1c1917';
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -785,22 +993,65 @@ export function drawFighter(ctx, f, time) {
     ctx.fillRect(-18, -9, 36, 6);
     ctx.fillStyle = '#eab308';
     ctx.fillRect(-3, -9, 6, 6);
-    // Faixa vermelha com suástica bem visível no uniforme
     ctx.fillStyle = '#dc2626';
     ctx.fillRect(-17, -29, 16, 14);
     drawSwastikaBadge(ctx, -9, -22, 6);
-  } else if (f.bandId === 'psayco') {
+  } else if (f.isMussolini) {
+    // Uniforme do Mussolini: camisa negra, faixa diagonal vermelha e detalhes militares
+    ctx.fillStyle = '#151515';
+    ctx.beginPath();
+    ctx.moveTo(-9, -35);
+    ctx.lineTo(9, -35);
+    ctx.lineTo(0, -13);
+    ctx.closePath();
+    ctx.fill();
+    // Gravata escura
+    ctx.fillStyle = '#0a0a0a';
+    ctx.beginPath();
+    ctx.moveTo(-2.2, -34);
+    ctx.lineTo(2.2, -34);
+    ctx.lineTo(3.0, -17);
+    ctx.lineTo(0, -12);
+    ctx.lineTo(-3.0, -17);
+    ctx.closePath();
+    ctx.fill();
+    // Cinto e fivela
+    ctx.fillStyle = '#1c1917';
+    ctx.fillRect(-18, -9, 36, 6);
+    ctx.fillStyle = '#d4af37';
+    ctx.fillRect(-4, -10, 8, 8);
+    // Faixa diagonal vermelha (estilo mais reconhecível)
+    ctx.save();
+    ctx.rotate(-0.08);
+    ctx.fillStyle = '#b91c1c';
+    ctx.fillRect(-22, -22, 44, 8);
+    ctx.restore();
+    // Medalhas/pins dourados
+    ctx.fillStyle = '#d4af37';
+    ctx.beginPath();
+    ctx.arc(-10, -22, 2.2, 0, Math.PI * 2);
+    ctx.arc(-6, -16, 1.8, 0, Math.PI * 2);
+    ctx.arc(-2, -10, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    // Quepe/insígnia no peito
+    ctx.fillStyle = '#7f1d1d';
+    ctx.fillRect(4, -29, 12, 6);
+    ctx.fillStyle = '#f4f1ea';
+    ctx.font = '900 5px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('DUCE', 10, -24.5);
+  } else if (f.bandId === 'psayco' && !f.hellMode) {
     ctx.fillStyle = '#1b4764';
     ctx.fillRect(-18, -10, 36, 7);
     ctx.fillRect(-4, -10, 8, 18);
-  } else if (f.bandId === 'julian') {
+  } else if (f.bandId === 'julian' && !f.hellMode) {
     ctx.strokeStyle = '#1f2937';
     ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(-10, -26);
     ctx.lineTo(6, -24);
     ctx.stroke();
-  } else {
+  } else if (!f.hellMode) {
     ctx.fillStyle = shirt;
     ctx.fillRect(-8, -34, 16, 34);
     // Detalhe de uniforme nazista (cinto + faixa vermelha com suástica na roupa!)
@@ -856,13 +1107,17 @@ export function drawFighter(ctx, f, time) {
 
   // === BRAÇO DE ATAQUE & ARMA / MALETA ===
   const isFlamethrower = f.weapon && f.weapon.id === 'flamethrower';
+  const isMachinegun = f.weapon && f.weapon.id === 'metralhadora';
   ctx.save();
   ctx.translate(10, -26);
   let armAngle = 0.25 + walkCycle * 0.3;
-  if (isHitlerCrying) {
+  if (isMussoliniCrying || isHitlerCrying) {
     armAngle = -2.1 + Math.sin(time * 32 + f.animSeed) * 0.55;
   } else if (f.isPanicked && f.state !== 'ko') {
     armAngle = -2.05 + Math.sin(time * 24 + f.animSeed) * 0.45;
+  } else if (isMachinegun) {
+    // Metralhadora V77: braço baixo em repouso e erguido ao atirar
+    armAngle = isAttacking ? 0 : 0.3 + walkCycle * 0.12;
   } else if (isFlamethrower) {
     armAngle = isAttacking ? -0.04 + Math.sin(time * 35) * 0.04 : 0.08;
   } else if (isAttacking) {
@@ -878,8 +1133,8 @@ export function drawFighter(ctx, f, time) {
   ctx.fillRect(-5, -5, 24, 11);
   ctx.strokeRect(-5, -5, 24, 11);
 
-  // Braçadeira vermelha com suástica no braço de todos os nazistas e do Hitler!
-  if (f.isNazi || f.isHitler || f.visual?.isNazi) {
+  // Braçadeira vermelha com suástica no braço de todos os nazistas e dos chefes!
+  if (f.isNazi || f.isHitler || f.isMussolini || f.visual?.isNazi) {
     ctx.fillStyle = '#dc2626';
     ctx.fillRect(-1, -5, 11, 11);
     drawSwastikaBadge(ctx, 4.5, 0.5, 4.5);
@@ -894,7 +1149,16 @@ export function drawFighter(ctx, f, time) {
   if (f.weapon) {
     ctx.save();
     ctx.translate(22, 0);
-    ctx.rotate(isFlamethrower ? 0 : isAttacking ? 0.55 : -0.45);
+    // V77: cano abaixado na posição normal e levantado durante a rajada
+    ctx.rotate(
+      isMachinegun
+        ? (isAttacking ? -0.35 : 0.12)
+        : isFlamethrower
+          ? 0
+          : isAttacking
+            ? 0.55
+            : -0.45
+    );
     drawWeaponShape(ctx, f.weapon.id, 1.05);
     ctx.restore();
   } else if (f.visual?.isRatSuit) {
@@ -933,7 +1197,7 @@ export function drawFighter(ctx, f, time) {
     const expr =
       f.state === 'ko'
         ? 'ko'
-        : isHitlerCrying
+        : (isHitlerCrying || isMussoliniCrying)
           ? 'cry'
           : f.hurtTimer > 0
             ? 'hit'
@@ -942,7 +1206,7 @@ export function drawFighter(ctx, f, time) {
               : isAttacking
                 ? 'shout'
                 : 'angry';
-    drawPunkHead(ctx, 0, headY, f.isHitler ? 21 : 19, f.visual, 1, expr, time);
+    drawPunkHead(ctx, 0, headY, (f.isHitler || f.isMussolini) ? 21 : 19, f.visual, 1, expr, time);
   }
 
   // Arco de golpe
@@ -974,29 +1238,33 @@ export function drawFighter(ctx, f, time) {
     ctx.restore();
   }
 
-  // Etiqueta acima de Rato Burocrata
-  if (f.visual?.isRatSuit && f.hp > 0) {
+  // Etiqueta acima de Rato Burocrata / Demônio
+  if ((f.visual?.isRatSuit || f.visual?.isDemon) && f.hp > 0) {
     ctx.save();
     ctx.scale(f.facing / s, 1 / s);
     ctx.font = '800 11px "Anton", sans-serif';
     ctx.textAlign = 'center';
+    const tag = f.visual?.isDemon ? '😈 DEMÔNIO' : 'RATO DA PEC';
     ctx.fillStyle = '#000';
-    ctx.fillText('RATO DA PEC', 1, -118);
-    ctx.fillStyle = '#facc15';
-    ctx.fillText('RATO DA PEC', 0, -119);
+    ctx.fillText(tag, 1, -118);
+    ctx.fillStyle = f.visual?.isDemon ? '#ef4444' : '#facc15';
+    ctx.fillText(tag, 0, -119);
     ctx.restore();
   }
 
-  // Nome e status chorando acima do Chefe Hitler no Bunker 77
-  if (f.isHitler && f.hp > 0) {
+  // Nome e status chorando acima dos Chefes no Bunker 77
+  if ((f.isHitler || f.isMussolini) && f.hp > 0) {
     ctx.save();
     ctx.scale(f.facing / s, 1 / s);
     ctx.font = '900 15px "Anton", sans-serif';
     ctx.textAlign = 'center';
-    const label = isHitlerCrying ? '😭 ADOLF HITLER (CHORANDO!) 😭' : '💀 ADOLF HITLER • CHEFE DO BUNKER 💀';
+    const crying = f.isHitler ? isHitlerCrying : isMussoliniCrying;
+    const label = f.isHitler
+      ? (crying ? '😭 ADOLF HITLER (CHORANDO!) 😭' : '💀 ADOLF HITLER • CHEFE DO BUNKER 💀')
+      : (crying ? '😭 BENITO MUSSOLINI (CHORANDO!) 😭' : '💀 BENITO MUSSOLINI • CHEFE DO BUNKER 💀');
     ctx.fillStyle = '#000';
     ctx.fillText(label, 1, -142);
-    ctx.fillStyle = isHitlerCrying ? '#38bdf8' : '#facc15';
+    ctx.fillStyle = crying ? '#38bdf8' : '#facc15';
     ctx.fillText(label, 0, -143);
     ctx.restore();
   }
@@ -1402,4 +1670,271 @@ export function drawSecretRoomVenue(ctx, W, H, time, audioInfo) {
   vig.addColorStop(1, 'rgba(0, 0, 0, 0.42)');
   ctx.fillStyle = vig;
   ctx.fillRect(0, 0, W, H);
+}
+
+// ================= EXPURGÁTORIO — INFERNO =================
+
+// Cenário do Inferno: reaproveita o palco com a paleta infernal e aplica lava, fogo e fumaça carmesim
+export function drawHellVenue(ctx, W, H, stage, audioInfo, time, moshActive, phase, portals) {
+  const bass = audioInfo.bass || 0;
+  const intensity = [0.35, 0.62, 0.82, 1][phase] || 1;
+
+  drawVenue(ctx, W, H, stage, audioInfo, time, true, false);
+
+  ctx.save();
+
+  // Fendas de lava no chão do mosh pit
+  const cracks = [
+    [90, 690, 250, 610, 430, 665],
+    [430, 665, 560, 570, 700, 640],
+    [700, 640, 870, 600, 1180, 690],
+    [180, 520, 330, 560, 470, 500],
+    [810, 500, 960, 555, 1130, 495],
+  ];
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (let i = 0; i < cracks.length; i++) {
+    const c = cracks[i];
+    ctx.strokeStyle = `rgba(255, 45, 0, ${(0.28 + bass * 0.3) * intensity})`;
+    ctx.lineWidth = 9 + bass * 4;
+    ctx.beginPath();
+    ctx.moveTo(c[0], c[1]);
+    ctx.quadraticCurveTo(c[2], c[3], c[4], c[5]);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(255, 210, 60, ${0.5 * intensity})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Colunas de fogo nas laterais do palco
+  const drawFlame = (fx, fy, scale, seed) => {
+    for (let i = 0; i < 5; i++) {
+      const sway = Math.sin(time * 5 + seed + i * 1.3) * 13;
+      const h = (50 + i * 11 + Math.sin(time * 8 + i) * 9) * scale;
+      ctx.fillStyle = i < 2 ? 'rgba(255, 40, 0, 0.55)' : i < 4 ? 'rgba(255, 140, 0, 0.42)' : 'rgba(255, 220, 90, 0.32)';
+      ctx.beginPath();
+      ctx.moveTo(fx - 18 + i * 7, fy);
+      ctx.quadraticCurveTo(fx - 12 + sway + i * 7, fy - h * 0.6, fx + sway + i * 7, fy - h);
+      ctx.quadraticCurveTo(fx + 12 + sway + i * 7, fy - h * 0.55, fx + 18 + i * 7, fy);
+      ctx.closePath();
+      ctx.fill();
+    }
+  };
+  drawFlame(46, 370, 0.9 + bass * 0.3, 0);
+  drawFlame(W - 46, 370, 0.9 + bass * 0.3, 2.1);
+  drawFlame(200, 384, 0.7 + bass * 0.2, 4.2);
+  drawFlame(W - 200, 384, 0.7 + bass * 0.2, 1.1);
+
+  // Fumaça carmesim subindo
+  for (let i = 0; i < 7; i++) {
+    const sx = 120 + i * 175;
+    const sy = 400 - ((time * 26 + i * 90) % 330);
+    ctx.fillStyle = `rgba(120, 10, 10, ${0.08 * intensity})`;
+    ctx.beginPath();
+    ctx.ellipse(sx + Math.sin(time + i) * 22, sy, 55, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Símbolo 77 em brasa na bateria
+  ctx.save();
+  ctx.translate(W / 2 + 15, 296);
+  const ringPulse = 1 + Math.sin(time * 7) * 0.06;
+  ctx.scale(ringPulse, ringPulse);
+  ctx.strokeStyle = `rgba(255, 60, 0, ${0.55 + bass * 0.4})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 58, 26, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.font = '900 22px "Black Ops One", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = `rgba(255, 90, 0, ${0.5 + bass * 0.45})`;
+  ctx.fillText('77', 0, 61);
+  ctx.restore();
+
+  // Título infernal
+  ctx.save();
+  ctx.globalAlpha = 0.5 + bass * 0.35;
+  ctx.font = '900 30px "Black Ops One", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#000';
+  ctx.fillText('EXPURGÁTORIO', W / 2 + 3, 224);
+  ctx.fillStyle = '#ff2a00';
+  ctx.fillText('EXPURGÁTORIO', W / 2, 222);
+  ctx.restore();
+
+  ctx.restore();
+}
+
+// Fissura do Inferno — portais por onde jorram os demônios
+export function drawPortal(ctx, portal, time, sealed = false, locked = false) {
+  ctx.save();
+  ctx.translate(portal.x, portal.y);
+  const pulse = 1 + Math.sin(time * 6 + portal.x * 0.01) * 0.07;
+  ctx.scale(pulse, pulse);
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.beginPath();
+  ctx.ellipse(0, 6, 62, 20, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (sealed) {
+    ctx.fillStyle = '#18181b';
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 48, 16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#4ade80';
+    ctx.font = '900 13px "Anton", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('SELADA', 0, -24);
+  } else {
+    const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 52);
+    glow.addColorStop(0, '#fef08a');
+    glow.addColorStop(0.3, '#f97316');
+    glow.addColorStop(0.7, '#b91c1c');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 52, 19, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#ff2a00';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-52, 2);
+    ctx.lineTo(-36, -9);
+    ctx.lineTo(-20, 4);
+    ctx.lineTo(-4, -12);
+    ctx.lineTo(14, 3);
+    ctx.lineTo(32, -8);
+    ctx.lineTo(52, 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffedd5';
+    ctx.font = '900 12px "Anton", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('FISSURA', 0, -26);
+
+    const guardians = portal.guardiansAlive || 0;
+    if (guardians > 0) {
+      // Escudo giratório enquanto houver guardiões vivos
+      ctx.save();
+      ctx.setLineDash([12, 8]);
+      ctx.lineDashOffset = -time * 34;
+      ctx.strokeStyle = '#fb923c';
+      ctx.lineWidth = 4;
+      ctx.shadowColor = '#f97316';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 68, 27, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = '#fdba74';
+      ctx.font = '900 14px "Anton", sans-serif';
+      ctx.fillText(`🛡 ${guardians} ${guardians > 1 ? 'GUARDIÕES' : 'GUARDIÃO'}`, 0, -44);
+    } else if (portal.openFor > 0) {
+      // Janela de selagem: anel verde + contagem regressiva
+      ctx.save();
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 4 + Math.sin(time * 12) * 1.5;
+      ctx.shadowColor = '#22c55e';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 66, 26, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = '#86efac';
+      ctx.font = '900 14px "Anton", sans-serif';
+      ctx.fillText(`⚔ ABERTA ${Math.ceil(portal.openFor)}s`, 0, -44);
+    }
+
+    // Aviso do disparo de fogo: linha de mira desde a fissura
+    if (portal.telegraph > 0) {
+      const tx = (portal.aimX || portal.x) - portal.x;
+      const ty = (portal.aimY || portal.y) - (portal.y - 26);
+      ctx.save();
+      ctx.globalAlpha = 0.35 + Math.sin(time * 30) * 0.25;
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([9, 7]);
+      ctx.beginPath();
+      ctx.moveTo(0, -26);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = '#fca5a5';
+      ctx.font = '900 16px "Anton", sans-serif';
+      ctx.fillText('🔥', 0, -54);
+    }
+
+    // Retículo do alvo travado por toque
+    if (locked) {
+      ctx.save();
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 3;
+      const r = 76;
+      for (const sx of [-1, 1]) {
+        for (const sy of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(sx * r, sy * 30 - sy * 14);
+          ctx.lineTo(sx * r, sy * 30);
+          ctx.lineTo(sx * r - sx * 16, sy * 30);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+// Projéteis da Metralhadora V77 e da Válvula Preta arremessada
+export function drawProjectile(ctx, pr, time) {
+  if (pr.kind === 'bullet') {
+    ctx.save();
+    ctx.strokeStyle = '#fdba74';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(pr.x - pr.vx * 0.022, pr.y - pr.vy * 0.022);
+    ctx.lineTo(pr.x, pr.y);
+    ctx.stroke();
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.arc(pr.x, pr.y, 3.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  } else if (pr.kind === 'valve') {
+    ctx.save();
+    ctx.translate(pr.x, pr.y);
+    ctx.globalAlpha = 0.65;
+    ctx.fillStyle = '#f97316';
+    for (let i = 1; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.arc(-pr.vx * 0.012 * i, -pr.vy * 0.012 * i + Math.sin(time * 20 + i) * 3, 12 - i * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.rotate(pr.rot || 0);
+    drawWeaponShape(ctx, 'valvula', 1.0);
+    ctx.restore();
+  } else if (pr.kind === 'hellfire') {
+    ctx.save();
+    ctx.translate(pr.x, pr.y);
+    const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 24);
+    glow.addColorStop(0, '#fef08a');
+    glow.addColorStop(0.35, '#f97316');
+    glow.addColorStop(1, 'rgba(239,68,68,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff7d6';
+    ctx.beginPath();
+    ctx.arc(0, 0, 6 + Math.sin(time * 24) * 1.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 }

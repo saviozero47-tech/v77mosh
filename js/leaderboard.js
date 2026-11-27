@@ -1,6 +1,7 @@
 // Cliente do Ranking Global Top 3 (Supabase REST API + fallback localStorage offline)
 
-const STORAGE_ENTRIES_KEY = 'v77_leaderboard_top3_v1';
+// v2: ranking zerado em 26/11/2026 — ignorar scores antigos salvos no navegador
+const STORAGE_ENTRIES_KEY = 'v77_leaderboard_top3_v2';
 const STORAGE_NAME_KEY = 'v77_player_name_v1';
 const SUPABASE_URL = 'https://mivrrzkiyjirfovrglfx.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_d0iHUDVJloGc5UAZzVjoag_SwvO47lS';

@@ -1,5 +1,5 @@
 // Controlador Principal de Telas & UI — VÁLVULA 77: MOSH DE ARMA BRANCA
-import { ALL_CHARACTERS, STAGES } from './config.js';
+import { ALL_CHARACTERS, STAGES, V77_SPOTIFY_URL } from './config.js';
 import { audioEngine } from './audio.js';
 import { preloadAssets, drawFighter, drawPunkHead, IMAGES } from './sprites.js';
 import { MoshGameEngine } from './engine.js';
@@ -308,11 +308,58 @@ const engine = new MoshGameEngine(gameCanvas, {
   onGameOver: (res) => showGameOver(res),
 });
 
+// EXPURGÁTORIO: tocar numa fissura trava o alvo da Válvula Preta (celular/touch)
+gameCanvas.addEventListener(
+  'pointerdown',
+  (e) => {
+    engine.setTargetLockAt(e.clientX, e.clientY, gameCanvas.getBoundingClientRect());
+  },
+  { passive: true }
+);
+
+// ===== CD VIRTUAL DO EXPURGÁTORIO =====
+const CD_UNLOCK_KEY = 'v77_virtual_cd_unlocked';
+const cdModal = document.getElementById('modal-vinyl');
+const cdTitleBtn = document.getElementById('btn-cd-vinyl');
+const secretBtn = document.getElementById('btn-secret-v77');
+const spotifyLink = document.getElementById('vinyl-spotify-link');
+
+if (spotifyLink) spotifyLink.href = V77_SPOTIFY_URL;
+
+function isCdUnlocked() {
+  try {
+    return localStorage.getItem(CD_UNLOCK_KEY) === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
+function unlockCd() {
+  try {
+    localStorage.setItem(CD_UNLOCK_KEY, '1');
+  } catch (_) {}
+}
+
+function refreshCdButton() {
+  if (cdTitleBtn) cdTitleBtn.classList.toggle('hidden', !isCdUnlocked());
+}
+
+function openCdModal() {
+  if (cdModal) cdModal.classList.remove('hidden');
+}
+
+function closeCdModal() {
+  if (cdModal) cdModal.classList.add('hidden');
+}
+
+refreshCdButton();
+
 function launchSelectedGame() {
   overlayPause.classList.add('hidden');
   overlayVictory.classList.add('hidden');
   overlayGameover.classList.add('hidden');
   bossHud.classList.add('hidden');
+  closeCdModal();
 
   const stage = STAGES[selectedStageIdx];
 
@@ -356,7 +403,7 @@ function updateGameHud(d) {
   const wTag = document.getElementById('hud-weapon-tag');
   if (p.weapon) {
     if (p.weapon.isSpecialWeapon) {
-      wTag.textContent = `🔥 ESPECIAL: LANÇA-CHAMAS (∞)`;
+      wTag.textContent = `${p.weapon.icon} ${p.weapon.name} (∞)`;
       wTag.className = 'weapon-pill special';
     } else {
       const durStr = Number.isFinite(p.weapon.durability) && !d.easterEggActive ? p.weapon.durability : '∞';
@@ -371,7 +418,16 @@ function updateGameHud(d) {
   const phasePill = document.getElementById('hud-phase-pill');
   const songLabel = document.getElementById('hud-song-label');
   const curStage = STAGES[selectedStageIdx];
-  if (d.easterEggActive) {
+
+  // Botão tátil secreto: só aparece depois da permanência dentro do círculo da bateria
+  if (secretBtn) secretBtn.classList.toggle('hidden', !d.hellTriggerReady);
+
+  if (d.hellMode) {
+    const guardians = d.hellGuardiansAlive || 0;
+    phasePill.textContent = `😈 FISSURAS ${d.hellPortalsSealed}/${d.hellPortalsTotal || 3} • 🛡 ${guardians} 😈`;
+    phasePill.className = 'phase-pill mosh';
+    if (songLabel) songLabel.textContent = d.hellPhaseLabel || 'FASE SECRETA — EXPURGÁTORIO';
+  } else if (d.easterEggActive) {
     phasePill.textContent = `💀 BUNKER 77 • ${d.easterEggTimerDisplay}s 💀`;
     phasePill.className = 'phase-pill mosh';
     if (songLabel) songLabel.textContent = 'MATE O MÁXIMO DE NAZISTAS QUE CONSEGUIR!';
@@ -391,7 +447,9 @@ function updateGameHud(d) {
 
   document.getElementById('hud-score').textContent = d.score;
   document.getElementById('hud-combo').textContent = `${d.combo}x`;
-  document.getElementById('hud-ko').textContent = `${d.koCount}/${d.targetKOs}`;
+  document.getElementById('hud-ko').textContent = d.hellMode
+    ? `FISSURAS ${d.hellPortalsSealed}/${d.hellPortalsTotal || 3}`
+    : `${d.koCount}/${d.targetKOs}`;
 
   // Status dos 4 integrantes no palco
   const dotsWrap = document.getElementById('hud-band-status');
@@ -422,7 +480,7 @@ function updateGameHud(d) {
     document.getElementById('boss-hud-name').textContent = `${d.mainBoss.name} — ${d.mainBoss.role.split('•')[0].trim().toUpperCase()}`;
     const bossSub = document.getElementById('boss-hud-sub');
     if (bossSub) {
-      bossSub.textContent = d.mainBoss.isHitler
+      bossSub.textContent = (d.mainBoss.isHitler || d.mainBoss.isMussolini)
         ? d.mainBoss.cryingTimer > 0
           ? '😭 CHORANDO NO BUNKER 77!'
           : 'CHEFE DO BUNKER 77'
@@ -444,7 +502,9 @@ async function handleRunLeaderboard(prefix, res) {
   const inputEl = document.getElementById(`${prefix}-name-input`);
   if (!listEl || !statusEl || !formEl || !inputEl) return;
 
-  const stageName = (STAGES[res.stageId] || STAGES[selectedStageIdx] || {}).name || 'MOSH DE ARMA BRANCA';
+  const stageName = res.isHell
+    ? 'EXPURGÁTORIO'
+    : (STAGES[res.stageId] || STAGES[selectedStageIdx] || {}).name || 'MOSH DE ARMA BRANCA';
   const runPayload = {
     characterName: selectedChar.name,
     stageName,
@@ -513,20 +573,40 @@ async function handleRunLeaderboard(prefix, res) {
 function showVictory(res) {
   const isFinal = res.stageId >= STAGES.length - 1;
   const nextStage = STAGES[(res.stageId + 1) % STAGES.length];
-  if (nextStage) {
+  if (nextStage && !res.isHell) {
     audioEngine.preloadStageStems(nextStage).catch(() => {});
   }
-  document.getElementById('victory-title').textContent = isFinal ? '🤘 SHOW ZERADO! LENDA DO MOSH! 🤘' : '🔥 PALCO DESTRUÍDO! 🔥';
-  document.getElementById('victory-desc').textContent = isFinal
-    ? 'Você sobreviveu a todas as músicas da Válvula 77 e derrubou a banda inteira!'
-    : `Você dominou "${STAGES[res.stageId].name}"! Próxima faixa já tá engatilhada!`;
-  document.getElementById('victory-stats').innerHTML = `
-    <div>SCORE<strong>${res.score}</strong></div>
-    <div>MAX COMBO<strong>${res.maxCombo}x</strong></div>
-    <div>MÚSICOS K.O.<strong>${res.bandKoCount}/4</strong></div>
-  `;
+
+  const titleEl = document.getElementById('victory-title');
+  const descEl = document.getElementById('victory-desc');
+  const statsEl = document.getElementById('victory-stats');
   const nextBtn = document.getElementById('btn-next-stage');
-  nextBtn.textContent = isFinal ? '🔄 JOGAR SHOW DE NOVO' : '⚡ PRÓXIMA MÚSICA';
+
+  if (res.isHell) {
+    unlockCd();
+    refreshCdButton();
+    titleEl.textContent = '😈 INFERNO EXPURGADO! 😈';
+    descEl.textContent = 'Você selou as três fissuras do EXPURGÁTORIO e garantiu o CD Virtual da Válvula 77!';
+    statsEl.innerHTML = `
+      <div>SCORE<strong>${res.score}</strong></div>
+      <div>MAX COMBO<strong>${res.maxCombo}x</strong></div>
+      <div>FISSURAS SELADAS<strong>3/3</strong></div>
+    `;
+    nextBtn.textContent = '🔄 JOGAR SHOW DE NOVO';
+    setTimeout(openCdModal, 420);
+  } else {
+    titleEl.textContent = isFinal ? '🤘 SHOW ZERADO! LENDA DO MOSH! 🤘' : '🔥 PALCO DESTRUÍDO! 🔥';
+    descEl.textContent = isFinal
+      ? 'Você sobreviveu a todas as músicas da Válvula 77 e derrubou a banda inteira!'
+      : `Você dominou "${STAGES[res.stageId].name}"! Próxima faixa já tá engatilhada!`;
+    statsEl.innerHTML = `
+      <div>SCORE<strong>${res.score}</strong></div>
+      <div>MAX COMBO<strong>${res.maxCombo}x</strong></div>
+      <div>MÚSICOS K.O.<strong>${res.bandKoCount}/4</strong></div>
+    `;
+    nextBtn.textContent = isFinal ? '🔄 JOGAR SHOW DE NOVO' : '⚡ PRÓXIMA MÚSICA';
+  }
+
   overlayVictory.classList.remove('hidden');
   handleRunLeaderboard('victory', res);
 }
@@ -557,6 +637,10 @@ window.addEventListener('keydown', (e) => {
   if (e.target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 
   if (e.code === 'Escape' || e.code === 'KeyP') {
+    if (cdModal && !cdModal.classList.contains('hidden')) {
+      closeCdModal();
+      return;
+    }
     if (screens.game.classList.contains('active')) togglePause();
     return;
   }
@@ -578,6 +662,22 @@ document.getElementById('btn-game-mute').addEventListener('click', (e) => {
   document.getElementById('btn-medley-mute').textContent = m ? '🔇' : '🔊';
 });
 
+// Gatilho secreto no celular e acesso ao CD Virtual
+if (secretBtn) {
+  secretBtn.addEventListener('click', () => {
+    secretBtn.classList.add('hidden');
+    engine.triggerHellStageFromButton();
+  });
+}
+if (cdTitleBtn) cdTitleBtn.addEventListener('click', openCdModal);
+const closeVinylBtn = document.getElementById('btn-close-vinyl');
+if (closeVinylBtn) closeVinylBtn.addEventListener('click', closeCdModal);
+if (cdModal) {
+  cdModal.addEventListener('click', (e) => {
+    if (e.target === cdModal) closeCdModal();
+  });
+}
+
 document.getElementById('btn-restart-stage').addEventListener('click', launchSelectedGame);
 document.getElementById('btn-retry').addEventListener('click', launchSelectedGame);
 
@@ -592,6 +692,8 @@ function returnToTitle() {
   overlayPause.classList.add('hidden');
   overlayVictory.classList.add('hidden');
   overlayGameover.classList.add('hidden');
+  closeCdModal();
+  refreshCdButton();
   audioEngine.startMenuMedley(0);
   showScreen('title');
 }
